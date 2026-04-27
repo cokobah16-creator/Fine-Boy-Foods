@@ -116,7 +116,7 @@ export function DashboardPage() {
             {
               done: false,
               label: "Connect Supabase for cloud storage",
-              detail: "Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env",
+              detail: "Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to .env",
             },
             {
               done: false,

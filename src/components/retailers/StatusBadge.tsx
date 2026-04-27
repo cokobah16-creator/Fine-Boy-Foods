@@ -3,21 +3,21 @@ import { RETAILER_STATUS_LABELS } from "@/types/retailer";
 
 const STATUS_STYLES: Record<RetailerStatus, string> = {
   not_contacted:
-    "bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-300",
+    "bg-charcoal-50 text-charcoal-500 ring-1 ring-inset ring-charcoal-200",
   contacted:
-    "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200",
+    "bg-[#DCEBFB] text-[#1B4F8A] ring-1 ring-inset ring-[#BFD8F2]",
   interested:
-    "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+    "bg-[#FBF1D2] text-gold-600 ring-1 ring-inset ring-gold-300",
   sample_delivered:
-    "bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-200",
+    "bg-[#E5DAF1] text-[#5B348C] ring-1 ring-inset ring-[#CCB7E6]",
   negotiating:
-    "bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200",
+    "bg-[#FFE2C7] text-[#9C4A0A] ring-1 ring-inset ring-[#F4A36A]",
   supplied:
-    "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
+    "bg-green-100 text-green-700 ring-1 ring-inset ring-green-200",
   rejected:
-    "bg-red-50 text-red-600 ring-1 ring-inset ring-red-200",
+    "bg-[#F9DEDC] text-[#8B1F1A] ring-1 ring-inset ring-[#F2BFBC]",
   do_not_contact:
-    "bg-red-100 text-red-800 ring-1 ring-inset ring-red-300 font-semibold",
+    "bg-charcoal-700 text-cream-100 ring-1 ring-inset ring-charcoal-700 font-semibold",
 };
 
 interface Props {
@@ -26,7 +26,7 @@ interface Props {
 }
 
 export function StatusBadge({ status, size = "md" }: Props) {
-  const sizeClass = size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs";
+  const sizeClass = size === "sm" ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs";
   return (
     <span
       className={`inline-flex items-center rounded-full font-medium ${sizeClass} ${STATUS_STYLES[status]}`}

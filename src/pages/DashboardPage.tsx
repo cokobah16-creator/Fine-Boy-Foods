@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 import {
   BuildingStorefrontIcon,
   MagnifyingGlassIcon,
-  ArrowTrendingUpIcon,
+  ArrowUpTrayIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
+import logoUrl from "@/assets/fbf-logo.png";
 
 type SupabaseStatus =
   | { state: "checking" }
@@ -25,27 +26,36 @@ const QUICK_LINKS = [
   {
     to: "/retailers",
     icon: BuildingStorefrontIcon,
-    label: "Retailer Pipeline",
-    description: "View and manage your Abuja retailer leads",
-    color: "bg-amber-50 text-amber-700",
-    iconBg: "bg-amber-100",
+    label: "Retailer pipeline",
+    description: "View and manage your Abuja retailer leads.",
+    iconBg: "bg-green-50",
+    iconFg: "text-green-700",
   },
   {
     to: "/retailers/find",
     icon: MagnifyingGlassIcon,
-    label: "Find New Leads",
-    description: "Use AI to discover new Abuja retailers",
-    color: "bg-blue-50 text-blue-700",
-    iconBg: "bg-blue-100",
+    label: "Find new leads",
+    description: "Use AI to discover Abuja retailers worth pitching.",
+    iconBg: "bg-cream-200",
+    iconFg: "text-gold-600",
   },
   {
     to: "/retailers/import",
-    icon: ArrowTrendingUpIcon,
-    label: "Import Retailers",
-    description: "Add retailers manually or via CSV upload",
-    color: "bg-emerald-50 text-emerald-700",
-    iconBg: "bg-emerald-100",
+    icon: ArrowUpTrayIcon,
+    label: "Add a retailer",
+    description: "Save a lead manually after a visit or call.",
+    iconBg: "bg-cream-100",
+    iconFg: "text-charcoal-600",
   },
+];
+
+const RETAIL_TAGS = [
+  "Supermarkets",
+  "Mini-marts",
+  "Hotels",
+  "Pharmacies",
+  "Fuel stations",
+  "Campus stores",
 ];
 
 export function DashboardPage() {
@@ -184,105 +194,110 @@ export function DashboardPage() {
   return (
     <div>
       {/* Welcome */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Welcome to Fine Boy Foods
+      <div className="mb-7">
+        <p className="eyebrow mb-2">Retailer Finder Agent</p>
+        <h1 className="heading-h1 text-[32px] leading-tight">
+          Welcome back to Fine Boy Foods
         </h1>
-        <p className="text-gray-500 mt-1 text-sm">
-          Your Abuja retail prospecting and CRM platform. Find, qualify, and supply retailers.
+        <p className="text-charcoal-500 mt-2 text-sm leading-relaxed">
+          Your Abuja prospecting CRM. Find, qualify, and supply retailers with FBF plantain chips.
         </p>
       </div>
 
-      {/* Brand context banner */}
-      <div className="mb-8 rounded-2xl bg-gradient-to-r from-brand-600 to-brand-500 p-6 text-white">
-        <div className="flex items-start gap-4">
-          <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-2xl">🍟</span>
-          </div>
-          <div>
-            <h2 className="text-lg font-bold">Fine Boy Foods – Plantain Chips</h2>
-            <p className="text-brand-100 text-sm mt-1 leading-relaxed">
+      {/* Brand context banner — flat forest green hero with cream text and gold accent */}
+      <div className="mb-8 rounded-xl bg-green-700 p-6 text-white relative overflow-hidden">
+        {/* Subtle gold accent shape, top-right */}
+        <div
+          aria-hidden
+          className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-gold-400/20 blur-2xl"
+        />
+        <div className="relative flex items-start gap-4">
+          <img
+            src={logoUrl}
+            alt=""
+            className="h-14 w-14 rounded-full ring-2 ring-cream-50/40 bg-cream-50 flex-shrink-0"
+          />
+          <div className="min-w-0">
+            <h2 className="heading-display text-xl text-cream-50">
+              Fine Boy Foods — plantain chips
+            </h2>
+            <p className="text-cream-100/90 text-sm mt-1.5 leading-relaxed">
               Premium Abuja-made plantain chips. Sweet Original &amp; Spicy Suya.
-              Clean ingredients, proudly Nigerian, ready for retail shelves across Abuja.
+              Clean ingredients, proudly Nigerian, ready for retail shelves.
             </p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              {["Supermarkets", "Mini-Marts", "Hotels", "Pharmacies", "Fuel Stations", "Campus Stores"].map(
-                (tag) => (
-                  <span
-                    key={tag}
-                    className="bg-white/20 rounded-full px-3 py-1 text-xs font-medium"
-                  >
-                    {tag}
-                  </span>
-                )
-              )}
+            <div className="flex flex-wrap gap-1.5 mt-4">
+              {RETAIL_TAGS.map((tag) => (
+                <span
+                  key={tag}
+                  className="bg-cream-50/15 ring-1 ring-cream-50/20 rounded-full px-2.5 py-1 text-[11px] font-medium text-cream-50"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Links */}
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-        Quick Actions
-      </h2>
+      {/* Quick Actions */}
+      <h2 className="eyebrow mb-3">Quick actions</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
         {QUICK_LINKS.map((link) => (
           <Link
             key={link.to}
             to={link.to}
-            className="card hover:shadow-md transition-all hover:-translate-y-0.5 group"
+            className="card hover:shadow-md hover:-translate-y-0.5 ease-standard group block"
           >
-            <div className={`h-10 w-10 rounded-xl ${link.iconBg} flex items-center justify-center mb-3`}>
-              <link.icon className={`h-5 w-5 ${link.color.split(" ")[1]}`} />
+            <div className={`h-10 w-10 rounded-md ${link.iconBg} flex items-center justify-center mb-3`}>
+              <link.icon className={`h-5 w-5 ${link.iconFg}`} strokeWidth={2} />
             </div>
-            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-brand-600 transition-colors">
+            <h3 className="text-sm font-semibold text-charcoal-700 group-hover:text-green-600 transition-colors">
               {link.label}
             </h3>
-            <p className="text-xs text-gray-500 mt-1">{link.description}</p>
+            <p className="text-xs text-charcoal-400 mt-1 leading-relaxed">{link.description}</p>
           </Link>
         ))}
       </div>
 
       {/* Setup checklist */}
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-        Getting Started
-      </h2>
+      <h2 className="eyebrow mb-3">Getting started</h2>
       <div className="card">
         <ul className="space-y-3">
           {[
             {
               done: true,
               label: "Retailer Finder Agent is live",
-              detail: "AI-powered lead discovery for Abuja retailers",
+              detail: "AI-powered lead discovery for Abuja retailers.",
             },
             {
               done: true,
               label: "Sample Abuja retailer leads loaded",
-              detail: "12 seed retailers across categories and areas",
+              detail: "12 seed retailers across categories and areas.",
             },
             supabaseChecklistItem,
             edgeFunctionChecklistItem,
             {
               done: false,
               label: "Add your first real Abuja retailer lead",
-              detail: "Visit /retailers/import to add manually",
+              detail: "Visit Add retailer to add manually.",
             },
           ].map((item, i) => (
             <li key={i} className="flex items-start gap-3">
               <CheckCircleIcon
                 className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
-                  item.done ? "text-emerald-500" : "text-gray-200"
+                  item.done ? "text-green-500" : "text-charcoal-100"
                 }`}
+                strokeWidth={2}
               />
               <div>
                 <p
                   className={`text-sm font-medium ${
-                    item.done ? "text-gray-900 line-through" : "text-gray-700"
+                    item.done ? "text-charcoal-400 line-through" : "text-charcoal-700"
                   }`}
                 >
                   {item.label}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">{item.detail}</p>
+                <p className="text-xs text-charcoal-400 mt-0.5">{item.detail}</p>
               </div>
             </li>
           ))}

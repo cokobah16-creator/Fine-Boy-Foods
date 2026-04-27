@@ -39,7 +39,7 @@ Fine Boy Foods is an Abuja-based snack brand producing premium plantain chips. T
 - Agent returns structured leads with score, pitch, and recommended next step
 - Preview results, select which to keep, and save to CRM in one click
 - Duplicate detection prevents the same retailer being saved twice
-- Works out of the box with a realistic mock; connects to a live Claude-powered Supabase Edge Function when deployed
+- Uses real-business discovery via Google Places + website signals and optional Claude cross-referencing through the Supabase Edge Function
 
 ### Retailer Profile (`/retailers/:id`)
 - Full contact details — phone, email, website, WhatsApp link
@@ -161,7 +161,7 @@ RLS is enabled on all tables. Authenticated users get full access by default —
 
 ### Live AI Search (Edge Function)
 
-The Retailer Finder Agent uses a mock by default. To enable live Claude-powered search:
+The Retailer Finder Agent is real-data only and requires a deployed Edge Function. It can optionally use Claude for scoring and pitch generation:
 
 **1. Install Supabase CLI**
 
@@ -176,19 +176,25 @@ supabase login
 supabase link --project-ref your-project-ref
 ```
 
-**3. Set your Anthropic API key**
+**3. Set required Google Places key (required)**
+
+```bash
+supabase secrets set GOOGLE_MAPS_API_KEY=your-google-maps-key-here
+```
+
+**4. Set Anthropic API key (optional but recommended)**
 
 ```bash
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-your-key-here
 ```
 
-**4. Deploy the function**
+**5. Deploy the function**
 
 ```bash
 supabase functions deploy find-retailers
 ```
 
-Once deployed, the app automatically routes AI search requests through the Edge Function instead of the mock.
+Once deployed, the app routes AI search through the Edge Function and returns only real businesses from Google Places (+ website contact signals).
 
 ---
 
@@ -242,7 +248,7 @@ RetailerFinderPage calls findRetailersWithAI()
   ┌─────────────────────────────────┐
   │  Supabase configured?           │
   │  Yes → call Edge Function       │
-  │  No  → use mock generator       │
+  │  No  → throw configuration error│
   └─────────────────────────────────┘
         ↓
 Results previewed in UI

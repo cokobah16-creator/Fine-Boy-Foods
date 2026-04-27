@@ -14,6 +14,13 @@ type SupabaseStatus =
   | { state: "connected"; rowCount: number }
   | { state: "error"; message: string };
 
+type EdgeFunctionStatus =
+  | { state: "waiting_supabase" }
+  | { state: "checking" }
+  | { state: "deployed"; aiEnabled: boolean }
+  | { state: "missing" }
+  | { state: "error"; message: string };
+
 const QUICK_LINKS = [
   {
     to: "/retailers",
@@ -45,6 +52,9 @@ export function DashboardPage() {
   const [supabaseStatus, setSupabaseStatus] = useState<SupabaseStatus>(
     supabaseConfigured ? { state: "checking" } : { state: "not_configured" }
   );
+  const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<EdgeFunctionStatus>(
+    supabaseConfigured ? { state: "checking" } : { state: "waiting_supabase" }
+  );
 
   useEffect(() => {
     if (!supabaseConfigured || !supabase) return;
@@ -58,6 +68,42 @@ export function DashboardPage() {
           setSupabaseStatus({ state: "error", message: error.message });
         } else {
           setSupabaseStatus({ state: "connected", rowCount: count ?? 0 });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabaseConfigured || !supabase) {
+      setEdgeFunctionStatus({ state: "waiting_supabase" });
+      return;
+    }
+    let cancelled = false;
+    setEdgeFunctionStatus({ state: "checking" });
+    supabase.functions
+      .invoke("find-retailers", { body: { health: true } })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          const status = (error as { status?: number; context?: { status?: number } }).status
+            ?? (error as { context?: { status?: number } }).context?.status;
+          if (status === 404) {
+            setEdgeFunctionStatus({ state: "missing" });
+          } else {
+            setEdgeFunctionStatus({ state: "error", message: error.message });
+          }
+          return;
+        }
+        const payload = data as { status?: string; anthropicConfigured?: boolean } | null;
+        if (payload?.status === "ok") {
+          setEdgeFunctionStatus({
+            state: "deployed",
+            aiEnabled: Boolean(payload.anthropicConfigured),
+          });
+        } else {
+          setEdgeFunctionStatus({ state: "error", message: "Unexpected health response" });
         }
       });
     return () => {
@@ -91,6 +137,46 @@ export function DashboardPage() {
           done: false,
           label: "Connect Supabase for cloud storage",
           detail: "Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to .env",
+        };
+    }
+  })();
+
+  const edgeFunctionChecklistItem = (() => {
+    switch (edgeFunctionStatus.state) {
+      case "deployed":
+        return {
+          done: true,
+          label: edgeFunctionStatus.aiEnabled
+            ? "Edge Function deployed (Claude scoring enabled)"
+            : "Edge Function deployed (deterministic scoring)",
+          detail: edgeFunctionStatus.aiEnabled
+            ? "find-retailers is live with GOOGLE_MAPS_API_KEY and ANTHROPIC_API_KEY set."
+            : "find-retailers is live. Set ANTHROPIC_API_KEY for Claude-powered scoring.",
+        };
+      case "checking":
+        return {
+          done: false,
+          label: "Checking Edge Function deployment…",
+          detail: "Probing supabase/functions/find-retailers.",
+        };
+      case "missing":
+        return {
+          done: false,
+          label: "Deploy Edge Function for live AI search",
+          detail: "Run `supabase functions deploy find-retailers` after setting GOOGLE_MAPS_API_KEY.",
+        };
+      case "error":
+        return {
+          done: false,
+          label: "Edge Function probe failed",
+          detail: edgeFunctionStatus.message,
+        };
+      case "waiting_supabase":
+      default:
+        return {
+          done: false,
+          label: "Deploy Edge Function for live AI search",
+          detail: "Connect Supabase first so deployment checks can run.",
         };
     }
   })();
@@ -175,11 +261,7 @@ export function DashboardPage() {
               detail: "12 seed retailers across categories and areas",
             },
             supabaseChecklistItem,
-            {
-              done: false,
-              label: "Deploy Edge Function for live AI search",
-              detail: "supabase/functions/find-retailers/index.ts",
-            },
+            edgeFunctionChecklistItem,
             {
               done: false,
               label: "Add your first real Abuja retailer lead",

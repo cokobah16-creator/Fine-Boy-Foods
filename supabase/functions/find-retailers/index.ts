@@ -2,19 +2,61 @@
  * Supabase Edge Function: find-retailers
  *
  * Retrieves real businesses from Google Places, enriches with website contact
- * signals, and then asks Claude to score/qualify only those real businesses.
+ * signals, then asks Claude to score/qualify only those real businesses. Falls
+ * back to deterministic scoring if Claude is unavailable or returns invalid
+ * JSON, so the search still succeeds.
  *
  * Required secrets:
  * - GOOGLE_MAPS_API_KEY
  * - ANTHROPIC_API_KEY (optional but recommended for better scoring/pitch text)
+ *
+ * Health probe: POST { "health": true } to check deployment + secret status
+ * without consuming Google Places quota.
  */
 
-import Anthropic from "npm:@anthropic-ai/sdk@0.27.3";
+import Anthropic from "npm:@anthropic-ai/sdk@0.32.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const VALID_CATEGORIES = new Set([
+  "any",
+  "supermarket",
+  "minimart",
+  "provision_store",
+  "pharmacy",
+  "fuel_station_mart",
+  "school_store",
+  "campus_store",
+  "hotel",
+  "gym",
+  "cafe",
+  "restaurant",
+  "distributor",
+  "wholesaler",
+  "other",
+]);
+
+type RetailerCategory = Exclude<
+  | "supermarket"
+  | "minimart"
+  | "provision_store"
+  | "pharmacy"
+  | "fuel_station_mart"
+  | "school_store"
+  | "campus_store"
+  | "hotel"
+  | "gym"
+  | "cafe"
+  | "restaurant"
+  | "distributor"
+  | "wholesaler"
+  | "other",
+  never
+>;
 
 interface SearchInput {
   area: string;
@@ -46,21 +88,7 @@ interface GooglePlaceDetails {
 
 interface CandidateLead {
   businessName: string;
-  category:
-    | "supermarket"
-    | "minimart"
-    | "provision_store"
-    | "pharmacy"
-    | "fuel_station_mart"
-    | "school_store"
-    | "campus_store"
-    | "hotel"
-    | "gym"
-    | "cafe"
-    | "restaurant"
-    | "distributor"
-    | "wholesaler"
-    | "other";
+  category: RetailerCategory;
   area: string;
   address: string;
   phone: string | null;
@@ -70,10 +98,43 @@ interface CandidateLead {
   mapsUrl: string | null;
 }
 
+const SYSTEM_PROMPT = `You are the Fine Boy Foods Retailer Qualification Agent.
+
+Fine Boy Foods is a premium Abuja snack brand. Products: plantain chips (Sweet Original, Spicy Suya). Target retail channels: supermarkets, mini-marts, provision stores, pharmacies, fuel station marts, school/campus stores, hotel gift counters, gyms, cafés, distributors, wholesalers.
+
+Your job: score the candidate businesses provided in the user message for retail partnership fit using ONLY the data given. Strict rules:
+- Do not invent businesses, phone numbers, emails, websites, mapsUrl values, or social links.
+- If a field is missing in the input, keep it null/empty in the output.
+- Score 0-100 reflecting Abuja retail fit (location relevance, category fit, contact visibility, footfall, shelf-space likelihood, multi-branch presence, snack/grocery alignment).
+- scoreReason should be one short sentence grounded in the candidate's actual data.
+- suggestedPitch: one sentence pitching FBF plantain chips, tailored to the retailer.
+- recommendedNextStep: one concrete next action (call/WhatsApp/visit + who to ask for).
+
+Return ONLY a JSON object - no prose, no code fences. Schema:
+{
+  "results": [
+    {
+      "businessName": string,
+      "category": "supermarket"|"minimart"|"provision_store"|"pharmacy"|"fuel_station_mart"|"school_store"|"campus_store"|"hotel"|"gym"|"cafe"|"restaurant"|"distributor"|"wholesaler"|"other",
+      "area": string,
+      "address": string,
+      "phone": string|null,
+      "email": string|null,
+      "website": string|null,
+      "socialLinks": string[],
+      "mapsUrl": string|null,
+      "leadScore": number,
+      "scoreReason": string,
+      "suggestedPitch": string,
+      "recommendedNextStep": string,
+      "source": "Google Places + Claude Cross-Reference"
+    }
+  ]
+}`;
+
 function normalizeUrl(url: string): string | null {
   try {
-    const u = new URL(url);
-    return u.toString();
+    return new URL(url).toString();
   } catch {
     return null;
   }
@@ -100,7 +161,7 @@ function categoryQuery(category: string): string {
   return map[category] ?? "retail stores";
 }
 
-function mapGoogleTypesToCategory(types: string[] = []): CandidateLead["category"] {
+function mapGoogleTypesToCategory(types: string[] = []): RetailerCategory {
   const t = new Set(types);
   if (t.has("supermarket") || t.has("grocery_or_supermarket")) return "supermarket";
   if (t.has("convenience_store")) return "minimart";
@@ -129,6 +190,42 @@ async function fetchWithTimeout(url: string, timeoutMs = 7000): Promise<Response
   } finally {
     clearTimeout(id);
   }
+}
+
+function validateInput(body: unknown):
+  | { ok: true; input: SearchInput }
+  | { ok: false; error: string } {
+  if (!body || typeof body !== "object") {
+    return { ok: false, error: "Request body must be a JSON object" };
+  }
+  const o = body as Record<string, unknown>;
+  if (typeof o.area !== "string" || !o.area.trim()) {
+    return { ok: false, error: "area is required" };
+  }
+  if (typeof o.category !== "string" || !VALID_CATEGORIES.has(o.category)) {
+    return { ok: false, error: "category is required and must be a known retailer category" };
+  }
+  if (typeof o.productFocus !== "string") {
+    return { ok: false, error: "productFocus is required" };
+  }
+  const minScore = Number(o.minimumLeadScore);
+  if (!Number.isFinite(minScore) || minScore < 0 || minScore > 100) {
+    return { ok: false, error: "minimumLeadScore must be a number between 0 and 100" };
+  }
+  const numLeads = Number(o.numberOfLeads);
+  if (!Number.isInteger(numLeads) || numLeads < 1 || numLeads > 25) {
+    return { ok: false, error: "numberOfLeads must be an integer between 1 and 25" };
+  }
+  return {
+    ok: true,
+    input: {
+      area: o.area.trim(),
+      category: o.category,
+      productFocus: o.productFocus,
+      minimumLeadScore: minScore,
+      numberOfLeads: numLeads,
+    },
+  };
 }
 
 async function searchGooglePlaces(input: SearchInput, apiKey: string): Promise<GoogleTextSearchResult[]> {
@@ -166,6 +263,8 @@ async function getPlaceDetails(placeId: string, apiKey: string): Promise<GoogleP
   return json.result ?? null;
 }
 
+const JUNK_EMAIL_PREFIX = /^(no[- ]?reply|do[- ]?not[- ]?reply|noreply|donotreply|postmaster|mailer-daemon|abuse|webmaster)@/i;
+
 async function enrichFromWebsite(website: string | null): Promise<{ email: string | null; socialLinks: string[] }> {
   if (!website) return { email: null, socialLinks: [] };
   const normalized = normalizeUrl(website);
@@ -174,9 +273,11 @@ async function enrichFromWebsite(website: string | null): Promise<{ email: strin
   try {
     const res = await fetchWithTimeout(normalized, 8000);
     if (!res.ok) return { email: null, socialLinks: [] };
-    const html = await res.text();
+    // Cap body size so a giant page doesn't blow memory or block the request.
+    const html = (await res.text()).slice(0, 200_000);
 
-    const emailMatch = html.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)?.[0] ?? null;
+    const emailCandidates = html.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? [];
+    const email = emailCandidates.find((e) => !JUNK_EMAIL_PREFIX.test(e)) ?? null;
 
     const socialPatterns = [
       /https?:\/\/(?:www\.)?instagram\.com\/[A-Za-z0-9._-]+/gi,
@@ -192,7 +293,7 @@ async function enrichFromWebsite(website: string | null): Promise<{ email: strin
       socialPatterns.flatMap((pattern) => html.match(pattern) ?? []).slice(0, 8)
     );
 
-    return { email: emailMatch, socialLinks: socials };
+    return { email, socialLinks: socials };
   } catch {
     return { email: null, socialLinks: [] };
   }
@@ -202,30 +303,34 @@ async function buildRealCandidates(input: SearchInput, googleApiKey: string): Pr
   const textResults = await searchGooglePlaces(input, googleApiKey);
 
   const detailResults = await Promise.all(
-    textResults.slice(0, Math.max(input.numberOfLeads * 3, 12)).map(async (r) => getPlaceDetails(r.place_id, googleApiKey))
+    textResults
+      .slice(0, Math.max(input.numberOfLeads * 3, 12))
+      .map((r) => getPlaceDetails(r.place_id, googleApiKey))
   );
 
-  const candidates: CandidateLead[] = [];
-  for (const details of detailResults) {
-    if (!details?.name) continue;
+  // Enrich every candidate website in parallel rather than one-by-one.
+  const candidates = await Promise.all(
+    detailResults
+      .filter((d): d is NonNullable<typeof d> => Boolean(d?.name))
+      .map(async (details) => {
+        const website = details.website ?? null;
+        const websiteSignals = await enrichFromWebsite(website);
+        const candidate: CandidateLead = {
+          businessName: details.name,
+          category: mapGoogleTypesToCategory(details.types ?? []),
+          area: input.area,
+          address: details.formatted_address ?? `${input.area}, Abuja, Nigeria`,
+          phone: details.international_phone_number ?? details.formatted_phone_number ?? null,
+          email: websiteSignals.email,
+          website,
+          socialLinks: websiteSignals.socialLinks,
+          mapsUrl: details.url ?? null,
+        };
+        return candidate;
+      })
+  );
 
-    const website = details.website ?? null;
-    const websiteSignals = await enrichFromWebsite(website);
-
-    candidates.push({
-      businessName: details.name,
-      category: mapGoogleTypesToCategory(details.types ?? []),
-      area: input.area,
-      address: details.formatted_address ?? `${input.area}, Abuja, Nigeria`,
-      phone: details.international_phone_number ?? details.formatted_phone_number ?? null,
-      email: websiteSignals.email,
-      website,
-      socialLinks: websiteSignals.socialLinks,
-      mapsUrl: details.url ?? null,
-    });
-  }
-
-  // Keep unique businesses by normalized name + address
+  // Dedupe by normalized name + address.
   const seen = new Set<string>();
   const uniqueCandidates = candidates.filter((c) => {
     const key = `${c.businessName.toLowerCase().trim()}|${c.address.toLowerCase().trim()}`;
@@ -258,15 +363,33 @@ function fallbackScoreAndPitch(input: SearchInput, candidates: CandidateLead[]) 
   };
 }
 
-async function crossReferenceWithClaude(input: SearchInput, candidates: CandidateLead[], anthropicApiKey: string) {
+async function crossReferenceWithClaude(
+  input: SearchInput,
+  candidates: CandidateLead[],
+  anthropicApiKey: string
+) {
   const client = new Anthropic({ apiKey: anthropicApiKey });
 
-  const prompt = `You are the Fine Boy Foods Retailer Qualification Agent.\n\nOnly use the candidate businesses provided below. Do not invent new businesses.\nDo not fabricate phone, email, website, mapsUrl, or social links.\nIf any field is missing, keep it null/empty.\n\nFine Boy Foods context:\n- Abuja snack brand\n- Products: premium plantain chips\n- Product focus: ${input.productFocus}\n\nCandidate businesses (real data from Google Places + website crawl):\n${JSON.stringify(candidates)}\n\nScore each candidate for retail partnership fit (0-100) and include concise rationale.\nOnly return records with score >= ${input.minimumLeadScore}.\nReturn at most ${input.numberOfLeads} results.\n\nReturn ONLY valid JSON in this structure:\n{\n  "results": [\n    {\n      "businessName": "string",\n      "category": "supermarket|minimart|provision_store|pharmacy|fuel_station_mart|school_store|campus_store|hotel|gym|cafe|restaurant|distributor|wholesaler|other",\n      "area": "string",\n      "address": "string",\n      "phone": null,\n      "email": null,\n      "website": null,\n      "socialLinks": [],\n      "mapsUrl": null,\n      "leadScore": 0,\n      "scoreReason": "string",\n      "suggestedPitch": "string",\n      "recommendedNextStep": "string",\n      "source": "Google Places + Claude Cross-Reference"\n    }\n  ]\n}`;
+  const userPrompt = `Search context:
+- Abuja area: ${input.area}
+- Product focus: ${input.productFocus}
+- Minimum lead score: ${input.minimumLeadScore}
+- Maximum results: ${input.numberOfLeads}
+
+Candidate businesses (real data from Google Places + website crawl):
+${JSON.stringify(candidates)}
+
+Return only candidates with leadScore >= ${input.minimumLeadScore}, up to ${input.numberOfLeads} results, in the JSON schema defined in your instructions.`;
 
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 2048,
-    messages: [{ role: "user", content: prompt }],
+    // Cache the static brand/scoring instructions; they are identical across
+    // every search and dominate the prompt token count.
+    system: [
+      { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+    ],
+    messages: [{ role: "user", content: userPrompt }],
   });
 
   const text = message.content[0]?.type === "text" ? message.content[0].text : "";
@@ -283,46 +406,71 @@ async function crossReferenceWithClaude(input: SearchInput, candidates: Candidat
   return parsed;
 }
 
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  if (req.method !== "POST") {
+    return jsonResponse({ error: "Method not allowed" }, 405);
+  }
+
+  let body: unknown;
   try {
-    const input: SearchInput = await req.json();
+    body = await req.json();
+  } catch {
+    return jsonResponse({ error: "Request body must be valid JSON" }, 400);
+  }
 
-    const googleApiKey = Deno.env.get("GOOGLE_MAPS_API_KEY");
-    if (!googleApiKey) {
-      return new Response(
-        JSON.stringify({ error: "Missing GOOGLE_MAPS_API_KEY" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+  // Health probe - lets the dashboard verify the function is deployed and
+  // which secrets are configured without burning Google Places quota.
+  if (body && typeof body === "object" && (body as { health?: unknown }).health === true) {
+    return jsonResponse({
+      status: "ok",
+      googleConfigured: Boolean(Deno.env.get("GOOGLE_MAPS_API_KEY")),
+      anthropicConfigured: Boolean(Deno.env.get("ANTHROPIC_API_KEY")),
+    });
+  }
 
+  const validated = validateInput(body);
+  if (!validated.ok) {
+    return jsonResponse({ error: validated.error }, 400);
+  }
+  const input = validated.input;
+
+  const googleApiKey = Deno.env.get("GOOGLE_MAPS_API_KEY");
+  if (!googleApiKey) {
+    return jsonResponse({ error: "Missing GOOGLE_MAPS_API_KEY" }, 500);
+  }
+
+  try {
     const candidates = await buildRealCandidates(input, googleApiKey);
     if (candidates.length === 0) {
-      return new Response(
-        JSON.stringify({ results: [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ results: [] });
     }
 
     const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    const payload = anthropicApiKey
-      ? await crossReferenceWithClaude(input, candidates, anthropicApiKey)
-      : fallbackScoreAndPitch(input, candidates);
+    if (anthropicApiKey) {
+      try {
+        const payload = await crossReferenceWithClaude(input, candidates, anthropicApiKey);
+        return jsonResponse(payload);
+      } catch (claudeErr) {
+        // Don't fail the whole request if Claude misbehaves - the deterministic
+        // fallback still produces useful real-business leads.
+        console.error("Claude cross-reference failed, falling back to deterministic scoring:", claudeErr);
+      }
+    }
 
-    return new Response(JSON.stringify(payload), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse(fallbackScoreAndPitch(input, candidates));
   } catch (err) {
     console.error(err);
-    return new Response(
-      JSON.stringify({ error: "Agent search failed", details: String(err) }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return jsonResponse({ error: "Agent search failed", details: String(err) }, 500);
   }
 });

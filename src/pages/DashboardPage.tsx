@@ -89,15 +89,12 @@ export function DashboardPage() {
           return;
         }
 
-        const maybeStatus = typeof (error as { context?: { status?: number } }).context?.status === "number";
-        if (maybeStatus) {
-          setEdgeFunctionStatus({ state: "deployed" });
-          return;
-        }
+        const status = (error as { context?: { status?: number } }).context?.status;
+        const statusSuffix = typeof status === "number" ? ` (HTTP ${status})` : "";
 
         setEdgeFunctionStatus({
           state: "not_deployed",
-          message: error.message,
+          message: `${error.message}${statusSuffix}`,
         });
       });
 

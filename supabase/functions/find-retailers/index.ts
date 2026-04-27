@@ -121,6 +121,29 @@ function unique<T>(arr: T[]): T[] {
   return [...new Set(arr)];
 }
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return [];
+
+  const safeConcurrency = Math.max(1, Math.min(concurrency, items.length));
+  const results = new Array<R>(items.length);
+  let currentIndex = 0;
+
+  await Promise.all(
+    Array.from({ length: safeConcurrency }, async () => {
+      while (currentIndex < items.length) {
+        const index = currentIndex++;
+        results[index] = await mapper(items[index], index);
+      }
+    })
+  );
+
+  return results;
+}
+
 async function fetchWithTimeout(url: string, timeoutMs = 7000): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -200,30 +223,40 @@ async function enrichFromWebsite(website: string | null): Promise<{ email: strin
 
 async function buildRealCandidates(input: SearchInput, googleApiKey: string): Promise<CandidateLead[]> {
   const textResults = await searchGooglePlaces(input, googleApiKey);
+  const detailLimit = Math.max(input.numberOfLeads * 3, 12);
+  const seededResults = textResults.slice(0, detailLimit);
 
-  const detailResults = await Promise.all(
-    textResults.slice(0, Math.max(input.numberOfLeads * 3, 12)).map(async (r) => getPlaceDetails(r.place_id, googleApiKey))
+  const detailResults = await Promise.allSettled(
+    seededResults.map(async (r) => getPlaceDetails(r.place_id, googleApiKey))
   );
 
-  const candidates: CandidateLead[] = [];
-  for (const details of detailResults) {
-    if (!details?.name) continue;
+  const settledDetails = detailResults
+    .filter((result): result is PromiseFulfilledResult<GooglePlaceDetails["result"] | null> => result.status === "fulfilled")
+    .map((result) => result.value)
+    .filter((details): details is NonNullable<GooglePlaceDetails["result"]> => Boolean(details?.name));
 
+  const websiteSignals = await mapWithConcurrency(
+    settledDetails,
+    6,
+    async (details) => enrichFromWebsite(details.website ?? null)
+  );
+
+  const candidates: CandidateLead[] = settledDetails.map((details, index) => {
     const website = details.website ?? null;
-    const websiteSignals = await enrichFromWebsite(website);
+    const signals = websiteSignals[index];
 
-    candidates.push({
+    return {
       businessName: details.name,
       category: mapGoogleTypesToCategory(details.types ?? []),
       area: input.area,
       address: details.formatted_address ?? `${input.area}, Abuja, Nigeria`,
       phone: details.international_phone_number ?? details.formatted_phone_number ?? null,
-      email: websiteSignals.email,
+      email: signals.email,
       website,
-      socialLinks: websiteSignals.socialLinks,
+      socialLinks: signals.socialLinks,
       mapsUrl: details.url ?? null,
-    });
-  }
+    };
+  });
 
   // Keep unique businesses by normalized name + address
   const seen = new Set<string>();

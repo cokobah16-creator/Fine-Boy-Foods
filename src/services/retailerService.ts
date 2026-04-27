@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigured } from "@/lib/supabase";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { db } from "@/lib/db";
 import { seedRetailers } from "@/data/seedRetailers";
 import type {
@@ -394,12 +395,57 @@ export async function addContact(
 
 // ─── AI Finder (Real Data only via Edge Function) ──────────────────────────────
 
+export type FinderErrorCause =
+  | "supabase_not_configured"
+  | "edge_function_not_deployed"
+  | "missing_google_key"
+  | "validation"
+  | "network"
+  | "unknown";
+
+export class FinderError extends Error {
+  cause: FinderErrorCause;
+  status?: number;
+  constructor(cause: FinderErrorCause, message: string, status?: number) {
+    super(message);
+    this.name = "FinderError";
+    this.cause = cause;
+    this.status = status;
+  }
+}
+
+async function readFunctionErrorBody(
+  err: FunctionsHttpError
+): Promise<{ status: number; message: string }> {
+  const ctx = err.context as Response | undefined;
+  const status = ctx?.status ?? 0;
+  if (!ctx) return { status, message: err.message };
+  try {
+    const body = await ctx.clone().json();
+    const message =
+      typeof body?.error === "string"
+        ? body.error
+        : typeof body?.message === "string"
+          ? body.message
+          : err.message;
+    return { status, message };
+  } catch {
+    try {
+      const text = await ctx.clone().text();
+      return { status, message: text || err.message };
+    } catch {
+      return { status, message: err.message };
+    }
+  }
+}
+
 export async function findRetailersWithAI(
   input: RetailerSearchInput
 ): Promise<RetailerAgentResult[]> {
   if (!supabaseConfigured || !supabase) {
-    throw new Error(
-      "Supabase is not configured. Real retailer search requires deployed Edge Function + API keys."
+    throw new FinderError(
+      "supabase_not_configured",
+      "Supabase isn't configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to your environment, then redeploy."
     );
   }
 
@@ -407,11 +453,38 @@ export async function findRetailersWithAI(
     "find-retailers",
     { body: input }
   );
-  if (error) throw error;
+
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      const { status, message } = await readFunctionErrorBody(error);
+      if (status === 404) {
+        throw new FinderError(
+          "edge_function_not_deployed",
+          "Edge Function 'find-retailers' isn't deployed. Run `supabase functions deploy find-retailers` after setting GOOGLE_MAPS_API_KEY.",
+          status
+        );
+      }
+      if (/GOOGLE_MAPS_API_KEY/i.test(message)) {
+        throw new FinderError(
+          "missing_google_key",
+          "Edge Function is deployed, but GOOGLE_MAPS_API_KEY isn't set. Run `supabase secrets set GOOGLE_MAPS_API_KEY=...`.",
+          status
+        );
+      }
+      if (status >= 400 && status < 500) {
+        throw new FinderError("validation", message, status);
+      }
+      throw new FinderError("unknown", message || "Edge Function error", status);
+    }
+    throw new FinderError(
+      "network",
+      error.message || "Could not reach the Edge Function. Check your network and Supabase URL."
+    );
+  }
 
   const results = (data as { results?: RetailerAgentResult[] })?.results;
   if (!Array.isArray(results)) {
-    throw new Error("Invalid retailer search response payload");
+    throw new FinderError("unknown", "Invalid retailer search response payload.");
   }
 
   return results;

@@ -6,11 +6,53 @@ import {
   CheckIcon,
   XMarkIcon,
   BuildingStorefrontIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import type { RetailerAgentResult, RetailerCategory } from "@/types/retailer";
 import { ABUJA_AREAS, RETAILER_CATEGORY_LABELS } from "@/types/retailer";
-import { findRetailersWithAI, saveAgentResults } from "@/services/retailerService";
+import {
+  findRetailersWithAI,
+  saveAgentResults,
+  FinderError,
+} from "@/services/retailerService";
 import { ScoreBadge, ScoreBar } from "@/components/retailers/ScoreBadge";
+
+function toFriendlyError(err: unknown): {
+  title: string;
+  message: string;
+  hint?: string;
+} {
+  if (err instanceof FinderError) {
+    switch (err.cause) {
+      case "supabase_not_configured":
+        return {
+          title: "Supabase isn't configured",
+          message: err.message,
+          hint: "On Vercel: Project → Settings → Environment Variables.",
+        };
+      case "edge_function_not_deployed":
+        return {
+          title: "Edge Function isn't deployed",
+          message: err.message,
+          hint: "From the project root: `supabase functions deploy find-retailers`.",
+        };
+      case "missing_google_key":
+        return {
+          title: "GOOGLE_MAPS_API_KEY is missing",
+          message: err.message,
+          hint: "Set the secret, then redeploy: `supabase secrets set GOOGLE_MAPS_API_KEY=...`.",
+        };
+      case "validation":
+        return { title: "Invalid search parameters", message: err.message };
+      case "network":
+        return { title: "Couldn't reach the Edge Function", message: err.message };
+      default:
+        return { title: "Agent search failed", message: err.message };
+    }
+  }
+  const message = err instanceof Error ? err.message : String(err);
+  return { title: "Agent search failed", message };
+}
 
 const CATEGORY_OPTIONS: { value: RetailerCategory | "any"; label: string }[] = [
   { value: "any", label: "Any Category" },
@@ -44,11 +86,17 @@ export function RetailerFinderPage() {
     saved: number;
     skipped: string[];
   } | null>(null);
+  const [searchError, setSearchError] = useState<{
+    title: string;
+    message: string;
+    hint?: string;
+  } | null>(null);
 
   async function handleFind() {
     setLoading(true);
     setResults(null);
     setSaveResult(null);
+    setSearchError(null);
     setSelected(new Set());
     try {
       const found = await findRetailersWithAI({
@@ -62,7 +110,7 @@ export function RetailerFinderPage() {
       setSelected(new Set(found.map((_, i) => i)));
     } catch (err) {
       console.error(err);
-      alert("Agent search failed. Please try again.");
+      setSearchError(toFriendlyError(err));
     } finally {
       setLoading(false);
     }
@@ -71,6 +119,7 @@ export function RetailerFinderPage() {
   async function handleSave() {
     if (!results || selected.size === 0) return;
     setSaving(true);
+    setSearchError(null);
     try {
       const toSave = results.filter((_, i) => selected.has(i));
       const { saved, skipped } = await saveAgentResults(toSave);
@@ -79,7 +128,8 @@ export function RetailerFinderPage() {
       setSelected(new Set());
     } catch (err) {
       console.error(err);
-      alert("Failed to save retailers. Please try again.");
+      const message = err instanceof Error ? err.message : String(err);
+      setSearchError({ title: "Failed to save retailers", message });
     } finally {
       setSaving(false);
     }
@@ -206,6 +256,31 @@ export function RetailerFinderPage() {
           </button>
         </div>
       </div>
+
+      {/* Error */}
+      {searchError && (
+        <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4">
+          <div className="flex items-start gap-3">
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-red-800">{searchError.title}</p>
+              <p className="text-xs text-red-700 mt-1 break-words">{searchError.message}</p>
+              {searchError.hint && (
+                <p className="text-xs text-red-600 mt-2 font-mono break-words">
+                  {searchError.hint}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => setSearchError(null)}
+              className="text-red-400 hover:text-red-600"
+              aria-label="Dismiss error"
+            >
+              <XMarkIcon className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Save result */}
       {saveResult && (

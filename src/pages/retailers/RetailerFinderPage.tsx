@@ -62,7 +62,8 @@ export function RetailerFinderPage() {
       setSelected(new Set(found.map((_, i) => i)));
     } catch (err) {
       console.error(err);
-      alert("Agent search failed. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : "Agent search failed. Please try again.";
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

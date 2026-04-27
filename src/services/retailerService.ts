@@ -399,15 +399,31 @@ export async function findRetailersWithAI(
 ): Promise<RetailerAgentResult[]> {
   if (!supabaseConfigured || !supabase) {
     throw new Error(
-      "Supabase is not configured. Real retailer search requires deployed Edge Function + API keys."
+      "Supabase isn't configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel → Settings → Environment Variables."
     );
   }
 
-  const { data, error } = await supabase.functions.invoke(
-    "find-retailers",
-    { body: input }
-  );
-  if (error) throw error;
+  const { data, error } = await supabase.functions.invoke("find-retailers", {
+    body: input,
+  });
+  if (error) {
+    const rawMessage = String(error.message ?? "");
+    const message = rawMessage.toLowerCase();
+
+    if (message.includes("failed to send a request to the edge function")) {
+      throw new Error(
+        "Edge Function isn't deployed. Run: supabase functions deploy find-retailers."
+      );
+    }
+
+    if (message.includes("missing google_maps_api_key")) {
+      throw new Error(
+        "GOOGLE_MAPS_API_KEY is missing. Run: supabase secrets set GOOGLE_MAPS_API_KEY=your-key."
+      );
+    }
+
+    throw error;
+  }
 
   const results = (data as { results?: RetailerAgentResult[] })?.results;
   if (!Array.isArray(results)) {

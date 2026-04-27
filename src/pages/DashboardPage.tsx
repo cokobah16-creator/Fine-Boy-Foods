@@ -14,6 +14,12 @@ type SupabaseStatus =
   | { state: "connected"; rowCount: number }
   | { state: "error"; message: string };
 
+type EdgeFunctionStatus =
+  | { state: "checking" }
+  | { state: "not_configured" }
+  | { state: "deployed" }
+  | { state: "not_deployed"; message: string };
+
 const QUICK_LINKS = [
   {
     to: "/retailers",
@@ -45,11 +51,15 @@ export function DashboardPage() {
   const [supabaseStatus, setSupabaseStatus] = useState<SupabaseStatus>(
     supabaseConfigured ? { state: "checking" } : { state: "not_configured" }
   );
+  const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<EdgeFunctionStatus>(
+    supabaseConfigured ? { state: "checking" } : { state: "not_configured" }
+  );
 
   useEffect(() => {
     if (!supabaseConfigured || !supabase) return;
     let cancelled = false;
-    supabase
+
+    const checkSupabase = supabase
       .from("retailers")
       .select("id", { count: "exact", head: true })
       .then(({ error, count }) => {
@@ -60,6 +70,39 @@ export function DashboardPage() {
           setSupabaseStatus({ state: "connected", rowCount: count ?? 0 });
         }
       });
+
+    const checkEdgeFunction = supabase.functions
+      .invoke("find-retailers", {
+        body: {
+          area: "Garki",
+          category: "any",
+          productFocus: "plantain chips",
+          minimumLeadScore: 50,
+          numberOfLeads: 1,
+        },
+      })
+      .then(({ error }) => {
+        if (cancelled) return;
+
+        if (!error) {
+          setEdgeFunctionStatus({ state: "deployed" });
+          return;
+        }
+
+        const maybeStatus = typeof (error as { context?: { status?: number } }).context?.status === "number";
+        if (maybeStatus) {
+          setEdgeFunctionStatus({ state: "deployed" });
+          return;
+        }
+
+        setEdgeFunctionStatus({
+          state: "not_deployed",
+          message: error.message,
+        });
+      });
+
+    Promise.allSettled([checkSupabase, checkEdgeFunction]);
+
     return () => {
       cancelled = true;
     };
@@ -91,6 +134,36 @@ export function DashboardPage() {
           done: false,
           label: "Connect Supabase for cloud storage",
           detail: "Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to .env",
+        };
+    }
+  })();
+
+  const edgeFunctionChecklistItem = (() => {
+    switch (edgeFunctionStatus.state) {
+      case "deployed":
+        return {
+          done: true,
+          label: "Deploy Edge Function for live AI search",
+          detail: "find-retailers is reachable from this environment.",
+        };
+      case "checking":
+        return {
+          done: false,
+          label: "Checking Edge Function deployment…",
+          detail: "Running a health check against find-retailers.",
+        };
+      case "not_configured":
+        return {
+          done: false,
+          label: "Deploy Edge Function for live AI search",
+          detail: "Connect Supabase first so deployment checks can run.",
+        };
+      case "not_deployed":
+      default:
+        return {
+          done: false,
+          label: "Deploy Edge Function for live AI search",
+          detail: `find-retailers is not reachable yet (${edgeFunctionStatus.message}).`,
         };
     }
   })();
@@ -175,11 +248,7 @@ export function DashboardPage() {
               detail: "12 seed retailers across categories and areas",
             },
             supabaseChecklistItem,
-            {
-              done: false,
-              label: "Deploy Edge Function for live AI search",
-              detail: "supabase/functions/find-retailers/index.ts",
-            },
+            edgeFunctionChecklistItem,
             {
               done: false,
               label: "Add your first real Abuja retailer lead",

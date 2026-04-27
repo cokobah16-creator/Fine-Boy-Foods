@@ -6,11 +6,13 @@ import {
   CheckIcon,
   XMarkIcon,
   BuildingStorefrontIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import type { RetailerAgentResult, RetailerCategory } from "@/types/retailer";
 import { ABUJA_AREAS, RETAILER_CATEGORY_LABELS } from "@/types/retailer";
 import { findRetailersWithAI, saveAgentResults } from "@/services/retailerService";
 import { ScoreBadge, ScoreBar } from "@/components/retailers/ScoreBadge";
+import { supabaseConfigured } from "@/lib/supabase";
 
 const CATEGORY_OPTIONS: { value: RetailerCategory | "any"; label: string }[] = [
   { value: "any", label: "Any Category" },
@@ -44,12 +46,14 @@ export function RetailerFinderPage() {
     saved: number;
     skipped: string[];
   } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleFind() {
     setLoading(true);
     setResults(null);
     setSaveResult(null);
     setSelected(new Set());
+    setError(null);
     try {
       const found = await findRetailersWithAI({
         area,
@@ -62,7 +66,11 @@ export function RetailerFinderPage() {
       setSelected(new Set(found.map((_, i) => i)));
     } catch (err) {
       console.error(err);
-      alert("Agent search failed. Please try again.");
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Agent search failed. Please try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -71,6 +79,7 @@ export function RetailerFinderPage() {
   async function handleSave() {
     if (!results || selected.size === 0) return;
     setSaving(true);
+    setError(null);
     try {
       const toSave = results.filter((_, i) => selected.has(i));
       const { saved, skipped } = await saveAgentResults(toSave);
@@ -79,7 +88,11 @@ export function RetailerFinderPage() {
       setSelected(new Set());
     } catch (err) {
       console.error(err);
-      alert("Failed to save retailers. Please try again.");
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Failed to save retailers. Please try again.";
+      setError(message);
     } finally {
       setSaving(false);
     }
@@ -107,6 +120,55 @@ export function RetailerFinderPage() {
           </p>
         </div>
       </div>
+
+      {/* Supabase config warning */}
+      {!supabaseConfigured && (
+        <div
+          role="alert"
+          className="mb-6 rounded-xl bg-amber-50 border border-amber-200 p-4"
+        >
+          <div className="flex items-start gap-2">
+            <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">
+                Supabase isn’t configured
+              </p>
+              <p className="text-xs text-amber-700 mt-1">
+                The retailer finder needs <code>VITE_SUPABASE_URL</code> and{" "}
+                <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> set in your Vercel
+                project (Settings → Environment Variables) for both Production
+                and Preview, then redeploy.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inline error */}
+      {error && (
+        <div
+          role="alert"
+          className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4"
+        >
+          <div className="flex items-start gap-2">
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-800">
+                Something went wrong
+              </p>
+              <p className="text-xs text-red-700 mt-1">{error}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="text-red-600 hover:text-red-800"
+              aria-label="Dismiss error"
+            >
+              <XMarkIcon className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search Form */}
       <div className="card mb-6">
@@ -189,8 +251,13 @@ export function RetailerFinderPage() {
         <div className="mt-5">
           <button
             onClick={handleFind}
-            disabled={loading}
+            disabled={loading || !supabaseConfigured}
             className="btn-primary w-full sm:w-auto"
+            title={
+              !supabaseConfigured
+                ? "Supabase environment variables are not set"
+                : undefined
+            }
           >
             {loading ? (
               <>

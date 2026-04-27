@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BuildingStorefrontIcon,
@@ -5,6 +6,13 @@ import {
   ArrowTrendingUpIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
+import { supabase, supabaseConfigured } from "@/lib/supabase";
+
+type SupabaseStatus =
+  | { state: "checking" }
+  | { state: "not_configured" }
+  | { state: "connected"; rowCount: number }
+  | { state: "error"; message: string };
 
 const QUICK_LINKS = [
   {
@@ -34,6 +42,59 @@ const QUICK_LINKS = [
 ];
 
 export function DashboardPage() {
+  const [supabaseStatus, setSupabaseStatus] = useState<SupabaseStatus>(
+    supabaseConfigured ? { state: "checking" } : { state: "not_configured" }
+  );
+
+  useEffect(() => {
+    if (!supabaseConfigured || !supabase) return;
+    let cancelled = false;
+    supabase
+      .from("retailers")
+      .select("id", { count: "exact", head: true })
+      .then(({ error, count }) => {
+        if (cancelled) return;
+        if (error) {
+          setSupabaseStatus({ state: "error", message: error.message });
+        } else {
+          setSupabaseStatus({ state: "connected", rowCount: count ?? 0 });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const supabaseChecklistItem = (() => {
+    switch (supabaseStatus.state) {
+      case "connected":
+        return {
+          done: true,
+          label: "Supabase connected",
+          detail: `Live connection to retailers table (${supabaseStatus.rowCount} rows).`,
+        };
+      case "checking":
+        return {
+          done: false,
+          label: "Checking Supabase connection…",
+          detail: "Running smoke test against the retailers table.",
+        };
+      case "error":
+        return {
+          done: false,
+          label: "Supabase configured but query failed",
+          detail: supabaseStatus.message,
+        };
+      case "not_configured":
+      default:
+        return {
+          done: false,
+          label: "Connect Supabase for cloud storage",
+          detail: "Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to .env",
+        };
+    }
+  })();
+
   return (
     <div>
       {/* Welcome */}
@@ -113,11 +174,7 @@ export function DashboardPage() {
               label: "Sample Abuja retailer leads loaded",
               detail: "12 seed retailers across categories and areas",
             },
-            {
-              done: false,
-              label: "Connect Supabase for cloud storage",
-              detail: "Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env",
-            },
+            supabaseChecklistItem,
             {
               done: false,
               label: "Deploy Edge Function for live AI search",

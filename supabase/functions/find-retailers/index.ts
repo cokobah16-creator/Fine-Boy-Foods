@@ -225,20 +225,27 @@ async function buildRealCandidates(input: SearchInput, googleApiKey: string): Pr
   const textResults = await searchGooglePlaces(input, googleApiKey);
   const detailLimit = Math.max(input.numberOfLeads * 3, 12);
   const seededResults = textResults.slice(0, detailLimit);
-
-  const detailResults = await Promise.allSettled(
-    seededResults.map(async (r) => getPlaceDetails(r.place_id, googleApiKey))
+  const detailResults = await mapWithConcurrency(
+    seededResults,
+    8,
+    async (result) => {
+      try {
+        return await getPlaceDetails(result.place_id, googleApiKey);
+      } catch (error) {
+        console.warn(`Place details lookup failed for ${result.place_id}`, error);
+        return null;
+      }
+    }
   );
 
-  const settledDetails = detailResults
-    .filter((result): result is PromiseFulfilledResult<GooglePlaceDetails["result"] | null> => result.status === "fulfilled")
-    .map((result) => result.value)
-    .filter((details): details is NonNullable<GooglePlaceDetails["result"]> => Boolean(details?.name));
+  const settledDetails = detailResults.filter(
+    (details): details is NonNullable<GooglePlaceDetails["result"]> => Boolean(details?.name)
+  );
 
-  const websiteSignals = await mapWithConcurrency(
-    settledDetails,
-    6,
-    async (details) => enrichFromWebsite(details.website ?? null)
+  // Enrich websites concurrently with a bounded worker pool to keep total
+  // latency below edge-function time limits while avoiding bursty outbound traffic.
+  const websiteSignals = await mapWithConcurrency(settledDetails, 8, async (details) =>
+    enrichFromWebsite(details.website ?? null)
   );
 
   const candidates: CandidateLead[] = settledDetails.map((details, index) => {

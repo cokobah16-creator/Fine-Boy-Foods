@@ -24,20 +24,20 @@ export function RetailerCard({ retailer }: Props) {
   const emailUrl = retailer.email ? `mailto:${retailer.email}` : null;
 
   return (
-    <div className="card hover:shadow-md transition-shadow">
+    <div className="card hover:shadow-md hover:-translate-y-0.5 ease-standard">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-brand-100 flex items-center justify-center">
-            <BuildingStorefrontIcon className="h-5 w-5 text-brand-600" />
+          <div className="flex-shrink-0 h-10 w-10 rounded-md bg-cream-100 ring-1 ring-charcoal-100/70 flex items-center justify-center">
+            <BuildingStorefrontIcon className="h-5 w-5 text-green-600" strokeWidth={2} />
           </div>
           <div className="min-w-0">
             <Link
               to={`/retailers/${retailer.id}`}
-              className="text-sm font-semibold text-gray-900 hover:text-brand-600 truncate block"
+              className="text-sm font-semibold text-charcoal-700 hover:text-green-600 truncate block"
             >
               {retailer.businessName}
             </Link>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-charcoal-400 mt-0.5">
               {RETAILER_CATEGORY_LABELS[retailer.category]}
             </p>
           </div>
@@ -45,68 +45,56 @@ export function RetailerCard({ retailer }: Props) {
         <ScoreBadge score={retailer.leadScore} showLabel={false} />
       </div>
 
-      {retailer.address && (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-500">
-          <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0" />
-          <span className="truncate">{retailer.area} · {retailer.address}</span>
-        </div>
-      )}
-      {!retailer.address && (
-        <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-500">
-          <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0" />
-          <span>{retailer.area}</span>
-        </div>
-      )}
+      <div className="mt-3 flex items-center gap-1.5 text-xs text-charcoal-400">
+        <MapPinIcon className="h-3.5 w-3.5 flex-shrink-0" strokeWidth={2} />
+        <span className="truncate">
+          {retailer.address ? `${retailer.area} · ${retailer.address}` : retailer.area}
+        </span>
+      </div>
 
       <div className="mt-3 flex items-center justify-between">
         <StatusBadge status={retailer.status} size="sm" />
       </div>
 
-      <div className="mt-4 flex items-center gap-2 pt-3 border-t border-gray-50">
+      <div className="mt-4 flex items-center gap-2 pt-3 border-t border-charcoal-100">
         {whatsappUrl ? (
           <a
             href={whatsappUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+            className="btn-whatsapp flex-1"
           >
-            <ChatBubbleLeftEllipsisIcon className="h-3.5 w-3.5" />
+            <ChatBubbleLeftEllipsisIcon className="h-3.5 w-3.5" strokeWidth={2} />
             WhatsApp
           </a>
         ) : (
-          <span className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-400 cursor-not-allowed">
-            <ChatBubbleLeftEllipsisIcon className="h-3.5 w-3.5" />
+          <span className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md bg-cream-100 px-3 py-2 text-xs text-charcoal-300 cursor-not-allowed">
+            <ChatBubbleLeftEllipsisIcon className="h-3.5 w-3.5" strokeWidth={2} />
             WhatsApp
           </span>
         )}
 
         {callUrl ? (
-          <a
-            href={callUrl}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
-          >
-            <PhoneIcon className="h-3.5 w-3.5" />
+          <a href={callUrl} className="btn-call flex-1">
+            <PhoneIcon className="h-3.5 w-3.5" strokeWidth={2} />
             Call
           </a>
         ) : (
-          <span className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-400 cursor-not-allowed">
-            <PhoneIcon className="h-3.5 w-3.5" />
+          <span className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md bg-cream-100 px-3 py-2 text-xs text-charcoal-300 cursor-not-allowed">
+            <PhoneIcon className="h-3.5 w-3.5" strokeWidth={2} />
             Call
           </span>
         )}
 
         {emailUrl ? (
-          <a
-            href={emailUrl}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors"
-          >
-            <EnvelopeIcon className="h-3.5 w-3.5" />
+          <a href={emailUrl} className="btn-email flex-1">
+            <EnvelopeIcon className="h-3.5 w-3.5" strokeWidth={2} />
             Email
           </a>
         ) : (
           <Link
             to={`/retailers/${retailer.id}`}
-            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700 hover:bg-brand-100 transition-colors"
+            className="btn-email flex-1"
           >
             View
           </Link>

@@ -15,14 +15,14 @@ import { ScoreBadge, ScoreBar } from "@/components/retailers/ScoreBadge";
 import { supabaseConfigured } from "@/lib/supabase";
 
 const CATEGORY_OPTIONS: { value: RetailerCategory | "any"; label: string }[] = [
-  { value: "any", label: "Any Category" },
+  { value: "any", label: "Any category" },
   { value: "supermarket", label: "Supermarket" },
-  { value: "minimart", label: "Mini-Mart" },
-  { value: "provision_store", label: "Provision Store" },
+  { value: "minimart", label: "Mini-mart" },
+  { value: "provision_store", label: "Provision store" },
   { value: "pharmacy", label: "Pharmacy" },
-  { value: "fuel_station_mart", label: "Fuel Station Mart" },
-  { value: "school_store", label: "School Store" },
-  { value: "campus_store", label: "Campus Store" },
+  { value: "fuel_station_mart", label: "Fuel station mart" },
+  { value: "school_store", label: "School store" },
+  { value: "campus_store", label: "Campus store" },
   { value: "hotel", label: "Hotel" },
   { value: "gym", label: "Gym" },
   { value: "cafe", label: "Café" },
@@ -110,13 +110,14 @@ export function RetailerFinderPage() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-brand-100 flex items-center justify-center">
-          <SparklesIcon className="h-5 w-5 text-brand-600" />
+        <div className="h-11 w-11 rounded-md bg-cream-200 flex items-center justify-center">
+          <SparklesIcon className="h-5 w-5 text-gold-600" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Retailer Finder Agent</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            AI-powered lead discovery for Abuja retailers
+          <p className="eyebrow mb-1">AI agent</p>
+          <h1 className="heading-h1 text-[26px] leading-tight">Find retailers</h1>
+          <p className="text-sm text-charcoal-500 mt-0.5">
+            Discover Abuja retailers worth pitching for FBF plantain chips.
           </p>
         </div>
       </div>
@@ -125,19 +126,19 @@ export function RetailerFinderPage() {
       {!supabaseConfigured && (
         <div
           role="alert"
-          className="mb-6 rounded-xl bg-amber-50 border border-amber-200 p-4"
+          className="mb-6 rounded-md bg-tier-maybe-bg ring-1 ring-tier-maybe-ring p-4"
         >
           <div className="flex items-start gap-2">
-            <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <ExclamationTriangleIcon className="h-5 w-5 text-gold-600 flex-shrink-0 mt-0.5" strokeWidth={2} />
             <div>
-              <p className="text-sm font-semibold text-amber-800">
+              <p className="text-sm font-semibold text-gold-600">
                 Supabase isn’t configured
               </p>
-              <p className="text-xs text-amber-700 mt-1">
-                The retailer finder needs <code>VITE_SUPABASE_URL</code> and{" "}
-                <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> set in your Vercel
-                project (Settings → Environment Variables) for both Production
-                and Preview, then redeploy.
+              <p className="text-xs text-tier-maybe-fg mt-1 leading-relaxed">
+                The retailer finder needs <code className="font-mono">VITE_SUPABASE_URL</code> and{" "}
+                <code className="font-mono">VITE_SUPABASE_PUBLISHABLE_KEY</code> set in your
+                Vercel project (Settings → Environment Variables) for both Production and Preview,
+                then redeploy.
               </p>
             </div>
           </div>
@@ -148,23 +149,23 @@ export function RetailerFinderPage() {
       {error && (
         <div
           role="alert"
-          className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4"
+          className="mb-6 rounded-md bg-[#F9DEDC] ring-1 ring-[#F2BFBC] p-4"
         >
           <div className="flex items-start gap-2">
-            <ExclamationTriangleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <ExclamationTriangleIcon className="h-5 w-5 text-[#8B1F1A] flex-shrink-0 mt-0.5" strokeWidth={2} />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-red-800">
+              <p className="text-sm font-semibold text-[#8B1F1A]">
                 Something went wrong
               </p>
-              <p className="text-xs text-red-700 mt-1">{error}</p>
+              <p className="text-xs text-[#8B1F1A]/90 mt-1">{error}</p>
             </div>
             <button
               type="button"
               onClick={() => setError(null)}
-              className="text-red-600 hover:text-red-800"
+              className="text-[#8B1F1A] hover:opacity-80"
               aria-label="Dismiss error"
             >
-              <XMarkIcon className="h-4 w-4" />
+              <XMarkIcon className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -172,11 +173,11 @@ export function RetailerFinderPage() {
 
       {/* Search Form */}
       <div className="card mb-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Search Parameters</h2>
+        <p className="eyebrow mb-4">Search parameters</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Abuja Area
+            <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+              Abuja area
             </label>
             <select
               value={area}
@@ -190,8 +191,8 @@ export function RetailerFinderPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Retailer Type
+            <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+              Retailer type
             </label>
             <select
               value={category}
@@ -205,22 +206,22 @@ export function RetailerFinderPage() {
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Product Focus
+            <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+              Product focus
             </label>
             <input
               type="text"
               value={productFocus}
               onChange={(e) => setProductFocus(e.target.value)}
-              placeholder="e.g. premium plantain chips, Spicy Suya flavor"
+              placeholder="e.g. premium plantain chips, Spicy Suya flavour"
               className="input"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Minimum Lead Score:{" "}
-              <span className="text-brand-600 font-bold">{minimumLeadScore}</span>
+            <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+              Min lead score:{" "}
+              <span className="text-green-600 tabular-nums">{minimumLeadScore}</span>
             </label>
             <input
               type="range"
@@ -228,13 +229,13 @@ export function RetailerFinderPage() {
               max={100}
               value={minimumLeadScore}
               onChange={(e) => setMinimumLeadScore(Number(e.target.value))}
-              className="w-full accent-brand-600"
+              className="w-full accent-green-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Number of Leads
+            <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+              Number of leads
             </label>
             <select
               value={numberOfLeads}
@@ -252,7 +253,7 @@ export function RetailerFinderPage() {
           <button
             onClick={handleFind}
             disabled={loading || !supabaseConfigured}
-            className="btn-primary w-full sm:w-auto"
+            className="btn-primary w-full sm:w-auto shadow-pop"
             title={
               !supabaseConfigured
                 ? "Supabase environment variables are not set"
@@ -262,12 +263,12 @@ export function RetailerFinderPage() {
             {loading ? (
               <>
                 <span className="animate-spin h-4 w-4 rounded-full border-2 border-white border-t-transparent" />
-                Searching Abuja...
+                Searching Abuja…
               </>
             ) : (
               <>
-                <MagnifyingGlassIcon className="h-4 w-4" />
-                Find Retailers
+                <MagnifyingGlassIcon className="h-4 w-4" strokeWidth={2} />
+                Find retailers
               </>
             )}
           </button>
@@ -276,17 +277,17 @@ export function RetailerFinderPage() {
 
       {/* Save result */}
       {saveResult && (
-        <div className="mb-6 rounded-xl bg-emerald-50 border border-emerald-200 p-4">
-          <div className="flex items-center gap-2 text-emerald-700 font-semibold text-sm mb-1">
-            <CheckIcon className="h-5 w-5" />
-            {saveResult.saved} retailer{saveResult.saved !== 1 ? "s" : ""} saved
+        <div className="mb-6 rounded-md bg-green-50 ring-1 ring-green-200 p-4">
+          <div className="flex items-center gap-2 text-green-700 font-semibold text-sm mb-1">
+            <CheckIcon className="h-5 w-5" strokeWidth={2} />
+            {saveResult.saved} retailer{saveResult.saved !== 1 ? "s" : ""} saved to your pipeline
           </div>
           {saveResult.skipped.length > 0 && (
-            <p className="text-xs text-emerald-600 mt-1">
+            <p className="text-xs text-green-700/80 mt-1">
               Skipped (duplicates): {saveResult.skipped.join(", ")}
             </p>
           )}
-          <Link to="/retailers" className="text-xs text-emerald-700 underline mt-2 block">
+          <Link to="/retailers" className="text-xs text-green-700 underline mt-2 inline-block font-semibold">
             View all retailers →
           </Link>
         </div>
@@ -296,20 +297,20 @@ export function RetailerFinderPage() {
       {results && results.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-900">
-              {results.length} Lead{results.length !== 1 ? "s" : ""} Found
+            <h2 className="text-base font-bold text-charcoal-700">
+              {results.length} lead{results.length !== 1 ? "s" : ""} found
             </h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setSelected(new Set(results.map((_, i) => i)))}
-                className="text-xs text-brand-600 hover:underline"
+                className="text-xs font-semibold text-green-700 hover:underline"
               >
                 Select all
               </button>
-              <span className="text-gray-300">|</span>
+              <span className="text-charcoal-200">|</span>
               <button
                 onClick={() => setSelected(new Set())}
-                className="text-xs text-gray-500 hover:underline"
+                className="text-xs text-charcoal-500 hover:underline"
               >
                 Clear
               </button>
@@ -320,31 +321,31 @@ export function RetailerFinderPage() {
             {results.map((r, i) => (
               <div
                 key={i}
-                className={`card transition-all cursor-pointer ${
+                className={`card transition-all duration-200 ease-standard cursor-pointer ${
                   selected.has(i)
-                    ? "ring-2 ring-brand-500"
-                    : "opacity-70 hover:opacity-90"
+                    ? "ring-2 ring-green-500"
+                    : "opacity-70 hover:opacity-100"
                 }`}
                 onClick={() => toggleSelect(i)}
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-0.5 h-5 w-5 flex-shrink-0 rounded border-2 flex items-center justify-center transition-colors ${
+                    className={`mt-0.5 h-5 w-5 flex-shrink-0 rounded-sm border-2 flex items-center justify-center transition-colors ${
                       selected.has(i)
-                        ? "border-brand-600 bg-brand-600"
-                        : "border-gray-300"
+                        ? "border-green-500 bg-green-500"
+                        : "border-charcoal-200"
                     }`}
                   >
-                    {selected.has(i) && <CheckIcon className="h-3 w-3 text-white" />}
+                    {selected.has(i) && <CheckIcon className="h-3 w-3 text-white" strokeWidth={3} />}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-900">
+                        <h3 className="text-sm font-semibold text-charcoal-700">
                           {r.businessName}
                         </h3>
-                        <p className="text-xs text-gray-500 mt-0.5">
+                        <p className="text-xs text-charcoal-400 mt-0.5">
                           {RETAILER_CATEGORY_LABELS[r.category]} · {r.area}
                         </p>
                       </div>
@@ -352,21 +353,23 @@ export function RetailerFinderPage() {
                     </div>
 
                     {r.address && (
-                      <p className="text-xs text-gray-500 mt-1">{r.address}</p>
+                      <p className="text-xs text-charcoal-500 mt-1">{r.address}</p>
                     )}
 
-                    <div className="mt-2">
+                    <div className="mt-2.5">
                       <ScoreBar score={r.leadScore} />
                     </div>
 
-                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div className="bg-gray-50 rounded-lg p-2">
-                        <p className="text-xs text-gray-500 font-medium mb-0.5">Score Reason</p>
-                        <p className="text-xs text-gray-700">{r.scoreReason}</p>
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="bg-cream-100 rounded-md p-2.5 ring-1 ring-charcoal-100/60">
+                        <p className="eyebrow mb-1">Score reason</p>
+                        <p className="text-xs text-charcoal-700">{r.scoreReason}</p>
                       </div>
-                      <div className="bg-brand-50 rounded-lg p-2">
-                        <p className="text-xs text-brand-700 font-medium mb-0.5">Next Step</p>
-                        <p className="text-xs text-brand-800">{r.recommendedNextStep}</p>
+                      <div className="bg-green-50 rounded-md p-2.5 ring-1 ring-green-100">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-green-700 mb-1">
+                          Next step
+                        </p>
+                        <p className="text-xs text-green-800">{r.recommendedNextStep}</p>
                       </div>
                     </div>
                   </div>
@@ -384,20 +387,17 @@ export function RetailerFinderPage() {
               {saving ? (
                 <>
                   <span className="animate-spin h-4 w-4 rounded-full border-2 border-white border-t-transparent" />
-                  Saving...
+                  Saving…
                 </>
               ) : (
                 <>
-                  <CheckIcon className="h-4 w-4" />
-                  Save {selected.size} Selected
+                  <CheckIcon className="h-4 w-4" strokeWidth={2} />
+                  Save {selected.size} selected
                 </>
               )}
             </button>
-            <button
-              onClick={() => setResults(null)}
-              className="btn-secondary"
-            >
-              <XMarkIcon className="h-4 w-4" />
+            <button onClick={() => setResults(null)} className="btn-secondary">
+              <XMarkIcon className="h-4 w-4" strokeWidth={2} />
               Clear
             </button>
           </div>
@@ -406,23 +406,23 @@ export function RetailerFinderPage() {
 
       {results && results.length === 0 && (
         <div className="card text-center py-12">
-          <BuildingStorefrontIcon className="h-12 w-12 text-gray-200 mx-auto mb-3" />
-          <p className="text-sm font-medium text-gray-900">No leads matched your criteria</p>
-          <p className="text-xs text-gray-500 mt-1">
+          <BuildingStorefrontIcon className="h-12 w-12 text-charcoal-200 mx-auto mb-3" strokeWidth={1.5} />
+          <p className="text-sm font-semibold text-charcoal-700">No leads matched your criteria</p>
+          <p className="text-xs text-charcoal-500 mt-1">
             Try lowering the minimum lead score or selecting a different area.
           </p>
         </div>
       )}
 
       {/* Info box */}
-      <div className="mt-8 rounded-xl bg-blue-50 border border-blue-100 p-4">
-        <h3 className="text-xs font-semibold text-blue-800 mb-2">How the Agent Works</h3>
-        <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
-          <li>Agent searches for Abuja retailers matching your criteria</li>
-          <li>Scores each retailer 0–100 based on FBF fit</li>
-          <li>Returns structured leads with pitch and next steps</li>
-          <li>Checks for duplicates before saving to your CRM</li>
-          <li>Connect a Supabase Edge Function for live AI-powered search</li>
+      <div className="mt-8 card-cream">
+        <p className="eyebrow mb-2">How the agent works</p>
+        <ol className="text-xs text-charcoal-600 space-y-1.5 list-decimal list-inside leading-relaxed">
+          <li>Searches for Abuja retailers matching your criteria.</li>
+          <li>Scores each retailer 0–100 based on FBF fit.</li>
+          <li>Returns structured leads with pitch and next steps.</li>
+          <li>Checks for duplicates before saving to your CRM.</li>
+          <li>Connect a Supabase Edge Function for live AI-powered search.</li>
         </ol>
       </div>
     </div>

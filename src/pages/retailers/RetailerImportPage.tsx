@@ -96,11 +96,11 @@ export function RetailerImportPage() {
   if (saved) {
     return (
       <div className="max-w-lg mx-auto text-center py-20">
-        <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-          <CheckIcon className="h-8 w-8 text-emerald-600" />
+        <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+          <CheckIcon className="h-8 w-8 text-green-700" strokeWidth={2} />
         </div>
-        <h2 className="text-xl font-bold text-gray-900">Retailer Saved!</h2>
-        <p className="text-sm text-gray-500 mt-2">Redirecting to your retailer pipeline…</p>
+        <h2 className="heading-h1 text-[22px]">Retailer saved</h2>
+        <p className="text-sm text-charcoal-500 mt-2">Redirecting to your retailer pipeline…</p>
       </div>
     );
   }
@@ -108,13 +108,14 @@ export function RetailerImportPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-brand-100 flex items-center justify-center">
-          <ArrowUpTrayIcon className="h-5 w-5 text-brand-600" />
+        <div className="h-11 w-11 rounded-md bg-cream-200 flex items-center justify-center">
+          <ArrowUpTrayIcon className="h-5 w-5 text-gold-600" strokeWidth={2} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Add Retailer</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Manually add a new Abuja retailer lead
+          <p className="eyebrow mb-1">Add</p>
+          <h1 className="heading-h1 text-[26px] leading-tight">Add a retailer</h1>
+          <p className="text-sm text-charcoal-500 mt-0.5">
+            Manually save a new Abuja retailer lead.
           </p>
         </div>
       </div>
@@ -122,11 +123,11 @@ export function RetailerImportPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Core Info */}
         <div className="card">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Business Info</h2>
+          <p className="eyebrow mb-4">Business info</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Business Name <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+                Business name <span className="text-[#8B1F1A]">*</span>
               </label>
               <input
                 type="text"
@@ -137,12 +138,12 @@ export function RetailerImportPage() {
                 placeholder="e.g. Next Cash and Carry"
               />
               {dupWarning && (
-                <p className="mt-1.5 text-xs text-red-600">{dupWarning}</p>
+                <p className="mt-1.5 text-xs text-[#8B1F1A]">{dupWarning}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
                 Category
               </label>
               <select
@@ -157,8 +158,8 @@ export function RetailerImportPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Abuja Area
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+                Abuja area
               </label>
               <select
                 value={form.area}
@@ -172,7 +173,7 @@ export function RetailerImportPage() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
                 Address
               </label>
               <input
@@ -188,22 +189,22 @@ export function RetailerImportPage() {
 
         {/* Contact */}
         <div className="card">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Contact Details</h2>
+          <p className="eyebrow mb-4">Contact details</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
                 Phone / WhatsApp
               </label>
               <input
                 type="tel"
                 value={form.phone}
                 onChange={(e) => update("phone", e.target.value)}
-                className="input"
+                className="input font-mono"
                 placeholder="+234 800 000 0000"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
                 Email
               </label>
               <input
@@ -215,7 +216,7 @@ export function RetailerImportPage() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
                 Website
               </label>
               <input
@@ -231,12 +232,12 @@ export function RetailerImportPage() {
 
         {/* Lead Qualification */}
         <div className="card">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Lead Qualification</h2>
+          <p className="eyebrow mb-4">Lead qualification</p>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Lead Score:{" "}
-                <span className="text-brand-600 font-bold">{form.leadScore}</span>
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+                Lead score:{" "}
+                <span className="text-green-600 tabular-nums">{form.leadScore}</span>
               </label>
               <input
                 type="range"
@@ -244,32 +245,32 @@ export function RetailerImportPage() {
                 max={100}
                 value={form.leadScore}
                 onChange={(e) => update("leadScore", Number(e.target.value))}
-                className="w-full accent-brand-600"
+                className="w-full accent-green-500"
               />
-              <div className="flex justify-between text-xs text-gray-400 mt-0.5">
-                <span>0 – Weak</span>
-                <span>40 – Maybe</span>
-                <span>60 – Good</span>
-                <span>80 – Hot</span>
+              <div className="flex justify-between text-[11px] text-charcoal-400 mt-1">
+                <span>0 — Weak</span>
+                <span>40 — Maybe</span>
+                <span>60 — Good</span>
+                <span>80 — Hot</span>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Score Reason
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+                Score reason
               </label>
               <input
                 type="text"
                 value={form.scoreReason}
                 onChange={(e) => update("scoreReason", e.target.value)}
                 className="input"
-                placeholder="Why did you score them this way?"
+                placeholder="High foot traffic + supermarket + snack shelf potential"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Suggested Pitch
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+                Suggested pitch
               </label>
               <textarea
                 rows={2}
@@ -281,8 +282,8 @@ export function RetailerImportPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Recommended Next Step
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
+                Recommended next step
               </label>
               <input
                 type="text"
@@ -294,7 +295,7 @@ export function RetailerImportPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-xs font-semibold text-charcoal-600 mb-1.5">
                 Source
               </label>
               <input
@@ -313,12 +314,12 @@ export function RetailerImportPage() {
             {saving ? (
               <>
                 <span className="animate-spin h-4 w-4 rounded-full border-2 border-white border-t-transparent" />
-                Saving...
+                Saving…
               </>
             ) : (
               <>
-                <CheckIcon className="h-4 w-4" />
-                Save Retailer
+                <CheckIcon className="h-4 w-4" strokeWidth={2} />
+                Save retailer
               </>
             )}
           </button>

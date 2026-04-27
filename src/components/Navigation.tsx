@@ -6,6 +6,7 @@ import {
   ArrowUpTrayIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import logoUrl from "@/assets/fbf-logo.png";
 
 interface NavItem {
   label: string;
@@ -19,9 +20,9 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const RETAILER_NAV: NavItem[] = [
-  { label: "All Retailers", to: "/retailers", icon: BuildingStorefrontIcon, exact: true },
-  { label: "Find New Leads", to: "/retailers/find", icon: MagnifyingGlassIcon },
-  { label: "Import Retailers", to: "/retailers/import", icon: ArrowUpTrayIcon },
+  { label: "All retailers", to: "/retailers", icon: BuildingStorefrontIcon, exact: true },
+  { label: "Find new leads", to: "/retailers/find", icon: MagnifyingGlassIcon },
+  { label: "Add retailer", to: "/retailers/import", icon: ArrowUpTrayIcon },
 ];
 
 interface Props {
@@ -35,14 +36,14 @@ function NavLinkItem({ item }: { item: NavItem }) {
       to={item.to}
       end={item.exact}
       className={({ isActive }) =>
-        `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+        `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 ease-standard ${
           isActive
-            ? "bg-brand-600 text-white"
-            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            ? "bg-green-500 text-white shadow-sm"
+            : "text-charcoal-500 hover:bg-cream-100 hover:text-charcoal-700"
         }`
       }
     >
-      <item.icon className="h-5 w-5 flex-shrink-0" />
+      <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={2} />
       {item.label}
     </NavLink>
   );
@@ -52,19 +53,25 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       {/* Brand */}
-      <div className="flex items-center justify-between px-4 py-5 border-b border-gray-100">
+      <div className="flex items-center justify-between px-4 py-5 border-b border-charcoal-100">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-brand-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-sm">FBF</span>
-          </div>
+          <img
+            src={logoUrl}
+            alt="Fine Boy Foods"
+            className="h-10 w-10 rounded-full ring-1 ring-charcoal-100 bg-cream-100 flex-shrink-0"
+          />
           <div>
-            <p className="text-sm font-bold text-gray-900 leading-tight">Fine Boy Foods</p>
-            <p className="text-xs text-gray-400">Retail CRM</p>
+            <p className="text-sm font-bold text-charcoal-700 leading-tight">Fine Boy Foods</p>
+            <p className="text-[11px] text-charcoal-400 mt-0.5">Retailer Finder</p>
           </div>
         </div>
         {onClose && (
-          <button onClick={onClose} className="lg:hidden p-1 rounded hover:bg-gray-100">
-            <XMarkIcon className="h-5 w-5 text-gray-400" />
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1 rounded-md hover:bg-cream-100 text-charcoal-400"
+            aria-label="Close menu"
+          >
+            <XMarkIcon className="h-5 w-5" />
           </button>
         )}
       </div>
@@ -75,10 +82,8 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           <NavLinkItem key={item.to} item={item} />
         ))}
 
-        <div className="pt-4 pb-2">
-          <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Retailer Finder
-          </p>
+        <div className="pt-5 pb-2">
+          <p className="px-3 eyebrow">Pipeline</p>
         </div>
 
         {RETAILER_NAV.map((item) => (
@@ -87,8 +92,10 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-gray-100">
-        <p className="text-xs text-gray-400 text-center">Fine Boy Foods &copy; 2025</p>
+      <div className="px-4 py-4 border-t border-charcoal-100">
+        <p className="text-[11px] text-charcoal-400 text-center">
+          Fine Boy Foods Ltd · Abuja
+        </p>
       </div>
     </div>
   );
@@ -96,7 +103,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="hidden lg:flex flex-col w-56 border-r border-gray-100 bg-white h-screen sticky top-0">
+    <aside className="hidden lg:flex flex-col w-60 border-r border-charcoal-100 bg-white h-screen sticky top-0">
       <SidebarContent />
     </aside>
   );
@@ -107,10 +114,10 @@ export function MobileSidebar({ open, onClose }: Props) {
   return (
     <>
       <div
-        className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+        className="fixed inset-0 z-40 fbf-scrim lg:hidden"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 left-0 z-50 w-56 bg-white lg:hidden shadow-xl">
+      <div className="fixed inset-y-0 left-0 z-50 w-60 bg-white lg:hidden shadow-lg">
         <SidebarContent onClose={onClose} />
       </div>
     </>

@@ -105,18 +105,19 @@ export function RetailersPage() {
       {/* Page header */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Retailer Pipeline</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Abuja retailers for Fine Boy Foods snack distribution
+          <p className="eyebrow mb-1.5">Pipeline</p>
+          <h1 className="heading-h1 text-[28px] leading-tight">Retailers</h1>
+          <p className="text-sm text-charcoal-500 mt-1">
+            Abuja retailers for Fine Boy Foods plantain chips distribution.
           </p>
         </div>
         <div className="flex gap-2">
           <Link to="/retailers/find" className="btn-primary">
-            <MagnifyingGlassIcon className="h-4 w-4" />
-            Find Leads
+            <MagnifyingGlassIcon className="h-4 w-4" strokeWidth={2} />
+            Find leads
           </Link>
           <Link to="/retailers/import" className="btn-secondary">
-            <PlusIcon className="h-4 w-4" />
+            <PlusIcon className="h-4 w-4" strokeWidth={2} />
             Add
           </Link>
         </div>
@@ -126,42 +127,42 @@ export function RetailersPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         {[
           {
-            label: "Total Retailers",
+            label: "Total retailers",
             value: stats.total,
             icon: BuildingStorefrontIcon,
-            color: "text-gray-600",
-            bg: "bg-gray-100",
+            iconBg: "bg-cream-100",
+            iconFg: "text-charcoal-600",
           },
           {
-            label: "Hot Leads",
+            label: "Hot leads",
             value: stats.hotLeads,
             icon: FireIcon,
-            color: "text-red-600",
-            bg: "bg-red-50",
+            iconBg: "bg-tier-hot-bg",
+            iconFg: "text-tier-hot-fg",
           },
           {
-            label: "Active Pipeline",
+            label: "Active pipeline",
             value: stats.active,
             icon: ClockIcon,
-            color: "text-amber-600",
-            bg: "bg-amber-50",
+            iconBg: "bg-tier-maybe-bg",
+            iconFg: "text-gold-600",
           },
           {
             label: "Supplied",
             value: stats.supplied,
             icon: CheckBadgeIcon,
-            color: "text-emerald-600",
-            bg: "bg-emerald-50",
+            iconBg: "bg-green-50",
+            iconFg: "text-green-700",
           },
         ].map((stat) => (
           <div key={stat.label} className="card">
             <div className="flex items-center gap-3">
-              <div className={`h-9 w-9 rounded-lg ${stat.bg} flex items-center justify-center flex-shrink-0`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              <div className={`h-10 w-10 rounded-md ${stat.iconBg} flex items-center justify-center flex-shrink-0`}>
+                <stat.icon className={`h-5 w-5 ${stat.iconFg}`} strokeWidth={2} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-xs text-gray-500">{stat.label}</p>
+                <p className="text-2xl font-bold text-charcoal-700 tabular-nums">{stat.value}</p>
+                <p className="text-xs text-charcoal-400">{stat.label}</p>
               </div>
             </div>
           </div>
@@ -171,15 +172,15 @@ export function RetailersPage() {
       {/* Filters */}
       <div className="card mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <FunnelIcon className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-700">Filters</span>
+          <FunnelIcon className="h-4 w-4 text-charcoal-400" strokeWidth={2} />
+          <span className="text-sm font-semibold text-charcoal-700">Filters</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="relative lg:col-span-2">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-charcoal-300" strokeWidth={2} />
             <input
               type="text"
-              placeholder="Search retailers..."
+              placeholder="Search retailers, areas, addresses…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="input pl-9"
@@ -191,7 +192,7 @@ export function RetailersPage() {
             onChange={(e) => setFilterArea(e.target.value)}
             className="input"
           >
-            <option value="all">All Areas</option>
+            <option value="all">All areas</option>
             {ABUJA_AREAS.map((a) => (
               <option key={a} value={a}>{a}</option>
             ))}
@@ -202,7 +203,7 @@ export function RetailersPage() {
             onChange={(e) => setFilterCategory(e.target.value)}
             className="input"
           >
-            <option value="all">All Categories</option>
+            <option value="all">All categories</option>
             {CATEGORY_OPTIONS.map((c) => (
               <option key={c} value={c}>{RETAILER_CATEGORY_LABELS[c]}</option>
             ))}
@@ -213,16 +214,16 @@ export function RetailersPage() {
             onChange={(e) => setFilterStatus(e.target.value)}
             className="input"
           >
-            <option value="all">All Statuses</option>
+            <option value="all">All statuses</option>
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>{RETAILER_STATUS_LABELS[s]}</option>
             ))}
           </select>
         </div>
 
-        <div className="mt-3 flex items-center gap-3">
-          <label className="text-xs text-gray-600 font-medium">
-            Min Lead Score: <span className="text-brand-600 font-bold">{filterMinScore}</span>
+        <div className="mt-4 flex items-center gap-3">
+          <label className="text-xs text-charcoal-500 font-semibold">
+            Min lead score: <span className="text-green-600 tabular-nums">{filterMinScore}</span>
           </label>
           <input
             type="range"
@@ -230,30 +231,30 @@ export function RetailersPage() {
             max={100}
             value={filterMinScore}
             onChange={(e) => setFilterMinScore(Number(e.target.value))}
-            className="flex-1 max-w-xs accent-brand-600"
+            className="flex-1 max-w-xs accent-green-500"
           />
         </div>
       </div>
 
       {/* View toggle + count */}
       <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-charcoal-500">
           {filtered.length} retailer{filtered.length !== 1 ? "s" : ""}
           {filtered.length !== retailers.length && ` (filtered from ${retailers.length})`}
         </p>
-        <div className="flex rounded-lg overflow-hidden border border-gray-200">
+        <div className="flex rounded-md overflow-hidden ring-1 ring-charcoal-200">
           <button
             onClick={() => setView("cards")}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-              view === "cards" ? "bg-brand-600 text-white" : "text-gray-600 hover:bg-gray-50"
+            className={`px-3 py-1.5 text-xs font-semibold transition-colors duration-150 ease-standard ${
+              view === "cards" ? "bg-green-500 text-white" : "text-charcoal-500 hover:bg-cream-100 bg-white"
             }`}
           >
             Cards
           </button>
           <button
             onClick={() => setView("table")}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-              view === "table" ? "bg-brand-600 text-white" : "text-gray-600 hover:bg-gray-50"
+            className={`px-3 py-1.5 text-xs font-semibold transition-colors duration-150 ease-standard ${
+              view === "table" ? "bg-green-500 text-white" : "text-charcoal-500 hover:bg-cream-100 bg-white"
             }`}
           >
             Table
@@ -263,18 +264,18 @@ export function RetailersPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin h-8 w-8 rounded-full border-2 border-brand-600 border-t-transparent" />
+          <div className="animate-spin h-8 w-8 rounded-full border-2 border-green-500 border-t-transparent" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="card text-center py-16">
-          <BuildingStorefrontIcon className="h-12 w-12 text-gray-200 mx-auto mb-4" />
-          <h3 className="text-base font-semibold text-gray-900">No retailers found</h3>
-          <p className="text-sm text-gray-500 mt-1 mb-5">
+          <BuildingStorefrontIcon className="h-12 w-12 text-charcoal-200 mx-auto mb-4" strokeWidth={1.5} />
+          <h3 className="text-base font-semibold text-charcoal-700">No retailers found</h3>
+          <p className="text-sm text-charcoal-500 mt-1 mb-5">
             Try adjusting your filters, or find new leads with the AI agent.
           </p>
           <Link to="/retailers/find" className="btn-primary mx-auto">
-            <MagnifyingGlassIcon className="h-4 w-4" />
-            Find Retailers
+            <MagnifyingGlassIcon className="h-4 w-4" strokeWidth={2} />
+            Find retailers
           </Link>
         </div>
       ) : view === "cards" ? (
@@ -286,45 +287,35 @@ export function RetailersPage() {
       ) : (
         <div className="card overflow-hidden p-0">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-charcoal-100">
+              <thead className="bg-cream-100">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Retailer
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Area
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Category
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Score
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Actions
-                  </th>
+                  {["Retailer", "Area", "Category", "Score", "Status", "Actions"].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left eyebrow"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50 bg-white">
+              <tbody className="divide-y divide-charcoal-100/70 bg-white">
                 {filtered.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={r.id} className="hover:bg-cream-50 transition-colors duration-150 ease-standard">
                     <td className="px-4 py-3">
                       <Link
                         to={`/retailers/${r.id}`}
-                        className="text-sm font-medium text-gray-900 hover:text-brand-600"
+                        className="text-sm font-semibold text-charcoal-700 hover:text-green-600"
                       >
                         {r.businessName}
                       </Link>
                       {r.phone && (
-                        <p className="text-xs text-gray-400 mt-0.5">{r.phone}</p>
+                        <p className="text-xs font-mono text-charcoal-400 mt-0.5">{r.phone}</p>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{r.area}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-charcoal-500">{r.area}</td>
+                    <td className="px-4 py-3 text-sm text-charcoal-500">
                       {RETAILER_CATEGORY_LABELS[r.category]}
                     </td>
                     <td className="px-4 py-3">
@@ -336,7 +327,7 @@ export function RetailersPage() {
                         onChange={(e) =>
                           handleStatusChange(r.id, e.target.value as RetailerStatus)
                         }
-                        className="text-xs border-0 bg-transparent p-0 font-medium focus:ring-0 cursor-pointer"
+                        className="text-xs border-0 bg-transparent p-0 font-semibold text-charcoal-700 focus:ring-0 cursor-pointer"
                       >
                         {STATUS_OPTIONS.map((s) => (
                           <option key={s} value={s}>
@@ -346,20 +337,20 @@ export function RetailersPage() {
                       </select>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         {r.phone && (
                           <a
                             href={`https://wa.me/${r.phone.replace(/\D/g, "")}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-xs text-emerald-600 hover:underline"
+                            className="text-xs font-semibold text-green-700 hover:underline"
                           >
-                            WA
+                            WhatsApp
                           </a>
                         )}
                         <Link
                           to={`/retailers/${r.id}`}
-                          className="text-xs text-brand-600 hover:underline"
+                          className="text-xs font-semibold text-green-700 hover:underline"
                         >
                           View
                         </Link>

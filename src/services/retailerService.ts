@@ -8,7 +8,6 @@ import type {
   RetailerOutreachLog,
   RetailerAgentResult,
   RetailerSearchInput,
-  RetailerCategory,
 } from "@/types/retailer";
 
 function uuid(): string {
@@ -393,226 +392,29 @@ export async function addContact(
   return record;
 }
 
-// ─── AI Finder (Mock + Edge Function ready) ───────────────────────────────────
+// ─── AI Finder (Real Data only via Edge Function) ──────────────────────────────
 
 export async function findRetailersWithAI(
   input: RetailerSearchInput
 ): Promise<RetailerAgentResult[]> {
-  // If Supabase is configured, call the edge function
-  if (supabaseConfigured && supabase) {
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        "find-retailers",
-        { body: input }
-      );
-      if (error) throw error;
-      return (data as { results: RetailerAgentResult[] }).results;
-    } catch {
-      // Fall through to mock
-    }
+  if (!supabaseConfigured || !supabase) {
+    throw new Error(
+      "Supabase is not configured. Real retailer search requires deployed Edge Function + API keys."
+    );
   }
 
-  // Mock: generate realistic Abuja retailer leads based on inputs
-  return generateMockRetailers(input);
-}
+  const { data, error } = await supabase.functions.invoke(
+    "find-retailers",
+    { body: input }
+  );
+  if (error) throw error;
 
-function generateMockRetailers(
-  input: RetailerSearchInput
-): RetailerAgentResult[] {
-  const templates: Record<
-    string,
-    Omit<RetailerAgentResult, "area" | "leadScore" | "scoreReason" | "source">[]
-  > = {
-    supermarket: [
-      {
-        businessName: `${input.area} Premium Supermarket`,
-        category: "supermarket",
-        address: `Block A, ${input.area}, Abuja`,
-        phone: null,
-        email: null,
-        website: null,
-        socialLinks: [],
-        mapsUrl: null,
-        suggestedPitch:
-          "Position FBF as a premium local snack brand for the snack and impulse-buy aisle.",
-        recommendedNextStep:
-          "Visit purchasing manager with samples and price list.",
-      },
-      {
-        businessName: `FreshMart ${input.area}`,
-        category: "supermarket",
-        address: `Main Road, ${input.area}, Abuja`,
-        phone: null,
-        email: null,
-        website: null,
-        socialLinks: [],
-        mapsUrl: null,
-        suggestedPitch:
-          "Emphasize FBF's clean ingredients and Nigerian origin story.",
-        recommendedNextStep: "Request supplier onboarding form.",
-      },
-    ],
-    minimart: [
-      {
-        businessName: `QuickStop Minimart – ${input.area}`,
-        category: "minimart",
-        address: `${input.area} Shopping Complex, Abuja`,
-        phone: null,
-        email: null,
-        website: null,
-        socialLinks: [],
-        mapsUrl: null,
-        suggestedPitch:
-          "Pitch FBF as a fast-moving snack for neighborhood convenience customers.",
-        recommendedNextStep: "Walk-in visit with product samples.",
-      },
-    ],
-    provision_store: [
-      {
-        businessName: `${input.area} Provisions`,
-        category: "provision_store",
-        address: `Market Road, ${input.area}, Abuja`,
-        phone: null,
-        email: null,
-        website: null,
-        socialLinks: [],
-        mapsUrl: null,
-        suggestedPitch:
-          "Offer FBF at competitive bulk rates that provide good margin for the store owner.",
-        recommendedNextStep:
-          "Offer sample pack and discuss minimum order quantities.",
-      },
-    ],
-    pharmacy: [
-      {
-        businessName: `MedPlus ${input.area}`,
-        category: "pharmacy",
-        address: `${input.area} Plaza, Abuja`,
-        phone: null,
-        email: null,
-        website: null,
-        socialLinks: [],
-        mapsUrl: null,
-        suggestedPitch:
-          "Present FBF Sweet Original as a clean, natural snack for health-aware pharmacy customers.",
-        recommendedNextStep: "Contact branch manager about snack shelf space.",
-      },
-    ],
-    fuel_station_mart: [
-      {
-        businessName: `NNPC Station Mart – ${input.area}`,
-        category: "fuel_station_mart",
-        address: `${input.area} Highway, Abuja`,
-        phone: null,
-        email: null,
-        website: null,
-        socialLinks: [],
-        mapsUrl: null,
-        suggestedPitch:
-          "Position FBF as a go-to Nigerian snack for drivers and commuters.",
-        recommendedNextStep:
-          "Speak to station manager about impulse-buy snack stocking.",
-      },
-    ],
-    hotel: [
-      {
-        businessName: `${input.area} Boutique Hotel`,
-        category: "hotel",
-        address: `${input.area} District, Abuja`,
-        phone: null,
-        email: null,
-        website: null,
-        socialLinks: [],
-        mapsUrl: null,
-        suggestedPitch:
-          "Present FBF as a premium Nigerian snack gift for hotel mini-bars and gift counters.",
-        recommendedNextStep: "Contact F&B or procurement manager.",
-      },
-    ],
-    gym: [
-      {
-        businessName: `FitLife Gym ${input.area}`,
-        category: "gym",
-        address: `${input.area} Sports Complex, Abuja`,
-        phone: null,
-        email: null,
-        website: null,
-        socialLinks: [],
-        mapsUrl: null,
-        suggestedPitch:
-          "Pitch FBF Sweet Original as a natural, guilt-free post-workout snack.",
-        recommendedNextStep: "Speak to gym owner about snack shelf placement.",
-      },
-    ],
-    distributor: [
-      {
-        businessName: `${input.area} Food Distributors Ltd`,
-        category: "distributor",
-        address: `Industrial Area, ${input.area}, Abuja`,
-        phone: null,
-        email: null,
-        website: null,
-        socialLinks: [],
-        mapsUrl: null,
-        suggestedPitch:
-          "Propose FBF as a new premium snack line to add to their existing distribution portfolio.",
-        recommendedNextStep:
-          "Schedule formal meeting with distribution manager.",
-      },
-    ],
-  };
-
-  const category =
-    input.category === "any"
-      ? (Object.keys(templates)[
-          Math.floor(Math.random() * Object.keys(templates).length)
-        ] as RetailerCategory)
-      : input.category;
-
-  const pool = templates[category] ?? templates["minimart"];
-  const count = Math.min(input.numberOfLeads, pool.length * 2);
-  const results: RetailerAgentResult[] = [];
-
-  for (let i = 0; i < count && i < pool.length; i++) {
-    const template = pool[i % pool.length];
-    const baseScore = 65 + Math.floor(Math.random() * 25);
-    results.push({
-      ...template,
-      area: input.area,
-      leadScore: Math.max(baseScore, input.minimumLeadScore),
-      scoreReason: `Located in ${input.area}. Category matches FBF target outlets. Generated from AI prospecting search.`,
-      source: "AI Agent (Mock – connect Edge Function for live search)",
-    });
+  const results = (data as { results?: RetailerAgentResult[] })?.results;
+  if (!Array.isArray(results)) {
+    throw new Error("Invalid retailer search response payload");
   }
 
-  // Pad with extra leads if requested more than templates
-  if (input.numberOfLeads > results.length) {
-    const extra = input.numberOfLeads - results.length;
-    for (let i = 0; i < extra; i++) {
-      results.push({
-        businessName: `${input.area} Retailer ${i + results.length + 1}`,
-        category: category as RetailerCategory,
-        area: input.area,
-        address: `${input.area}, Abuja`,
-        phone: null,
-        email: null,
-        website: null,
-        socialLinks: [],
-        mapsUrl: null,
-        leadScore: Math.max(
-          50 + Math.floor(Math.random() * 30),
-          input.minimumLeadScore
-        ),
-        scoreReason: `Located in ${input.area}. Suitable ${category} outlet for FBF snack products.`,
-        suggestedPitch:
-          "Introduce FBF as a premium Abuja-made snack brand suitable for retail stocking.",
-        recommendedNextStep: "Walk-in visit with samples and price list.",
-        source: "AI Agent (Mock)",
-      });
-    }
-  }
-
-  return results.filter((r) => r.leadScore >= input.minimumLeadScore);
+  return results;
 }
 
 // ─── Supabase Row Mappers ─────────────────────────────────────────────────────

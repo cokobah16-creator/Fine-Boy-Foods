@@ -126,23 +126,6 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           <NavLinkItem key={item.to} item={item} count={retailerCount} />
         ))}
       </nav>
-
-      {/* User card */}
-      <div className="px-3 py-3 border-t border-charcoal-800">
-        <div className="flex items-center gap-3 rounded-md px-2 py-2">
-          <div className="h-9 w-9 rounded-full bg-gold-400 flex items-center justify-center text-[12px] font-bold text-charcoal-900">
-            CO
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-cream-50 leading-tight truncate">
-              Chika O.
-            </p>
-            <p className="text-[11px] text-charcoal-300 mt-0.5 truncate">
-              Sales lead · Abuja
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

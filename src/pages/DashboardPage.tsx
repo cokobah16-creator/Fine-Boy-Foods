@@ -4,10 +4,11 @@ import {
   BuildingStorefrontIcon,
   MagnifyingGlassIcon,
   ArrowUpTrayIcon,
-  CheckCircleIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 import logoUrl from "@/assets/fbf-logo.png";
+import { TodaysOrderOfBusiness } from "@/components/dashboard/TodaysOrderOfBusiness";
 
 type SupabaseStatus =
   | { state: "checking" }
@@ -121,92 +122,34 @@ export function DashboardPage() {
     };
   }, []);
 
-  const supabaseChecklistItem = (() => {
-    switch (supabaseStatus.state) {
-      case "connected":
-        return {
-          done: true,
-          label: "Supabase connected",
-          detail: `Live connection to retailers table (${supabaseStatus.rowCount} rows).`,
-        };
-      case "checking":
-        return {
-          done: false,
-          label: "Checking Supabase connection…",
-          detail: "Running smoke test against the retailers table.",
-        };
-      case "error":
-        return {
-          done: false,
-          label: "Supabase configured but query failed",
-          detail: supabaseStatus.message,
-        };
-      case "not_configured":
-      default:
-        return {
-          done: false,
-          label: "Connect Supabase for cloud storage",
-          detail: "Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to .env",
-        };
-    }
-  })();
+  // Only surface a system-status block when something is actively broken or
+  // unconfigured. Healthy probes render nothing — the dashboard stays focused
+  // on the day's work, not always-green checkmarks.
+  const systemIssues: { label: string; detail: string }[] = [];
 
-  const firstLeadChecklistItem = (() => {
-    // Reuse the row count from the Supabase probe — when there's at least
-    // one real retailer in the database, the onboarding step is complete.
-    if (supabaseStatus.state === "connected" && supabaseStatus.rowCount > 0) {
-      return {
-        done: true,
-        label: "First real retailer lead added",
-        detail: `${supabaseStatus.rowCount} retailer${supabaseStatus.rowCount === 1 ? "" : "s"} in your pipeline.`,
-      };
-    }
-    return {
-      done: false,
-      label: "Add your first real Abuja retailer lead",
-      detail: "Visit Add retailer to add manually, or use Find Retailers.",
-    };
-  })();
+  if (supabaseStatus.state === "not_configured") {
+    systemIssues.push({
+      label: "Connect Supabase for cloud storage",
+      detail: "Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to .env, then redeploy.",
+    });
+  } else if (supabaseStatus.state === "error") {
+    systemIssues.push({
+      label: "Supabase configured but query failed",
+      detail: supabaseStatus.message,
+    });
+  }
 
-  const edgeFunctionChecklistItem = (() => {
-    switch (edgeFunctionStatus.state) {
-      case "deployed":
-        return {
-          done: true,
-          label: edgeFunctionStatus.aiEnabled
-            ? "Edge Function deployed (Claude scoring enabled)"
-            : "Edge Function deployed (deterministic scoring)",
-          detail: edgeFunctionStatus.aiEnabled
-            ? "find-retailers is live with GOOGLE_MAPS_API_KEY and ANTHROPIC_API_KEY set."
-            : "find-retailers is live. Set ANTHROPIC_API_KEY for Claude-powered scoring.",
-        };
-      case "checking":
-        return {
-          done: false,
-          label: "Checking Edge Function deployment…",
-          detail: "Probing supabase/functions/find-retailers.",
-        };
-      case "missing":
-        return {
-          done: false,
-          label: "Deploy Edge Function for live AI search",
-          detail: "Run `supabase functions deploy find-retailers` after setting GOOGLE_MAPS_API_KEY.",
-        };
-      case "error":
-        return {
-          done: false,
-          label: "Edge Function probe failed",
-          detail: edgeFunctionStatus.message,
-        };
-      case "waiting_supabase":
-      default:
-        return {
-          done: false,
-          label: "Deploy Edge Function for live AI search",
-          detail: "Connect Supabase first so deployment checks can run.",
-        };
-    }
-  })();
+  if (edgeFunctionStatus.state === "missing") {
+    systemIssues.push({
+      label: "Deploy Edge Function for live AI search",
+      detail: "Run `supabase functions deploy find-retailers` after setting GOOGLE_MAPS_API_KEY.",
+    });
+  } else if (edgeFunctionStatus.state === "error") {
+    systemIssues.push({
+      label: "Edge Function probe failed",
+      detail: edgeFunctionStatus.message,
+    });
+  }
 
   return (
     <div>
@@ -276,36 +219,31 @@ export function DashboardPage() {
         ))}
       </div>
 
-      {/* Setup checklist */}
-      <h2 className="eyebrow mb-3">Getting started</h2>
-      <div className="card">
-        <ul className="space-y-3">
-          {[
-            supabaseChecklistItem,
-            edgeFunctionChecklistItem,
-            firstLeadChecklistItem,
-          ].map((item, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <CheckCircleIcon
-                className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
-                  item.done ? "text-green-500" : "text-charcoal-100"
-                }`}
-                strokeWidth={2}
-              />
-              <div>
-                <p
-                  className={`text-sm font-medium ${
-                    item.done ? "text-charcoal-400 line-through" : "text-charcoal-700"
-                  }`}
-                >
-                  {item.label}
-                </p>
-                <p className="text-xs text-charcoal-400 mt-0.5">{item.detail}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Today's order of business — editorial briefing built from real
+          retailers data, replaces the static Getting Started checklist. */}
+      <TodaysOrderOfBusiness />
+
+      {/* System status — only render when something is actually broken so the
+          dashboard isn't cluttered with always-green checkmarks. */}
+      {systemIssues.length > 0 && (
+        <div className="mt-6 card">
+          <h2 className="eyebrow mb-3">System status</h2>
+          <ul className="space-y-3">
+            {systemIssues.map((item, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <ExclamationTriangleIcon
+                  className="h-5 w-5 flex-shrink-0 mt-0.5 text-tier-maybe-fg"
+                  strokeWidth={2}
+                />
+                <div>
+                  <p className="text-sm font-medium text-charcoal-700">{item.label}</p>
+                  <p className="text-xs text-charcoal-400 mt-0.5">{item.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

@@ -75,6 +75,7 @@ export function RetailerImportPage() {
         email: form.email || null,
         website: form.website || null,
         socialLinks: [],
+        activeChannels: [],
         mapsUrl: null,
         leadScore: form.leadScore,
         scoreReason: form.scoreReason || null,

@@ -17,6 +17,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 92,
     scoreReason:
@@ -40,6 +41,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 85,
     scoreReason:
@@ -62,6 +64,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 90,
     scoreReason:
@@ -85,6 +88,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 88,
     scoreReason:
@@ -107,6 +111,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 78,
     scoreReason:
@@ -130,6 +135,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 65,
     scoreReason:
@@ -152,6 +158,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 72,
     scoreReason:
@@ -175,6 +182,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: "https://www.hilton.com",
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 80,
     scoreReason:
@@ -198,6 +206,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 70,
     scoreReason:
@@ -221,6 +230,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 60,
     scoreReason:
@@ -243,6 +253,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 75,
     scoreReason:
@@ -266,6 +277,7 @@ export const seedRetailers: Retailer[] = [
     email: null,
     website: null,
     socialLinks: [],
+    activeChannels: [],
     mapsUrl: null,
     leadScore: 68,
     scoreReason:

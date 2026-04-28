@@ -34,6 +34,7 @@ export interface Retailer {
   email?: string | null;
   website?: string | null;
   socialLinks: string[];
+  activeChannels: string[];
   mapsUrl?: string | null;
   leadScore: number;
   scoreReason?: string | null;

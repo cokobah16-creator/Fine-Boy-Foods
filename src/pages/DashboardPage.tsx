@@ -264,16 +264,6 @@ export function DashboardPage() {
       <div className="card">
         <ul className="space-y-3">
           {[
-            {
-              done: true,
-              label: "Retailer Finder Agent is live",
-              detail: "AI-powered lead discovery for Abuja retailers.",
-            },
-            {
-              done: true,
-              label: "Sample Abuja retailer leads loaded",
-              detail: "12 seed retailers across categories and areas.",
-            },
             supabaseChecklistItem,
             edgeFunctionChecklistItem,
             {

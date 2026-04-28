@@ -1,6 +1,5 @@
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 import { db } from "@/lib/db";
-import { seedRetailers } from "@/data/seedRetailers";
 import type {
   Retailer,
   RetailerContact,
@@ -15,8 +14,12 @@ function uuid(): string {
 }
 
 // ─── In-Memory Store (used when Supabase is not configured) ───────────────────
+//
+// Starts empty intentionally — no fake/seed data ships with the app. When
+// Supabase isn't configured, the user sees a real empty state and must add
+// real retailers via the Add retailer page.
 
-let memoryStore: Retailer[] = [...seedRetailers];
+let memoryStore: Retailer[] = [];
 
 // ─── Retailer CRUD ────────────────────────────────────────────────────────────
 

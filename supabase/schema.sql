@@ -7,9 +7,17 @@ create table if not exists public.retailers (
   address text,
   phone text,
   email text,
+  -- Ranked, deduped contact arrays. Index 0 mirrors phone/email and is the
+  -- channel most likely to be currently active (mobile / role-based mailbox /
+  -- profile from the freshest page).
+  phones text[] default '{}'::text[],
+  emails text[] default '{}'::text[],
   website text,
   social_links jsonb default '[]'::jsonb,
   maps_url text,
+  -- Most recent freshness signal observed on the retailer's website
+  -- (Last-Modified, og:updated_time, article:modified_time, …).
+  last_updated_at timestamptz,
   lead_score int default 0 check (lead_score >= 0 and lead_score <= 100),
   score_reason text,
   suggested_pitch text,
@@ -19,6 +27,12 @@ create table if not exists public.retailers (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Backfill columns on databases that pre-date the active-channels work.
+-- `add column if not exists` is idempotent so re-running schema.sql is safe.
+alter table public.retailers add column if not exists phones          text[] default '{}'::text[];
+alter table public.retailers add column if not exists emails          text[] default '{}'::text[];
+alter table public.retailers add column if not exists last_updated_at timestamptz;
 
 -- ─── Retailer Contacts ────────────────────────────────────────────────────────
 create table if not exists public.retailer_contacts (

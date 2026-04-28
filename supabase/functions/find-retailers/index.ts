@@ -91,11 +91,21 @@ interface CandidateLead {
   category: RetailerCategory;
   area: string;
   address: string;
+  // Top-ranked single values are kept for backward compatibility with the
+  // existing save flow, which writes `phone`/`email` to the retailers table.
   phone: string | null;
   email: string | null;
+  // Ranked, deduped lists. Index 0 is the channel most likely to be active
+  // (role-based mailbox, mobile number, profile link from the freshest page).
+  phones: string[];
+  emails: string[];
   website: string | null;
   socialLinks: string[];
   mapsUrl: string | null;
+  // ISO timestamp of the most recent freshness signal we found across the
+  // site (Last-Modified header, og:updated_time, article:modified_time, or
+  // a <time datetime="…"> on the contact/about page). Null if unknown.
+  lastUpdatedAt: string | null;
 }
 
 const SYSTEM_PROMPT = `You are the Fine Boy Foods Retailer Qualification Agent.
@@ -103,12 +113,16 @@ const SYSTEM_PROMPT = `You are the Fine Boy Foods Retailer Qualification Agent.
 Fine Boy Foods is a premium Abuja snack brand. Products: plantain chips (Sweet Original, Spicy Suya). Target retail channels: supermarkets, mini-marts, provision stores, pharmacies, fuel station marts, school/campus stores, hotel gift counters, gyms, cafés, distributors, wholesalers.
 
 Your job: score the candidate businesses provided in the user message for retail partnership fit using ONLY the data given. Strict rules:
-- Do not invent businesses, phone numbers, emails, websites, mapsUrl values, or social links.
+- Do not invent businesses, phone numbers, emails, websites, mapsUrl values, or social links. Every value you output for these fields must appear verbatim in the candidate input.
 - If a field is missing in the input, keep it null/empty in the output.
 - Score 0-100 reflecting Abuja retail fit (location relevance, category fit, contact visibility, footfall, shelf-space likelihood, multi-branch presence, snack/grocery alignment).
-- scoreReason should be one short sentence grounded in the candidate's actual data.
+- Recency / activity ranking: each candidate may include "emails", "phones", "socialLinks" arrays plus a "lastUpdatedAt" hint. Reorder each array so the channel most likely to be currently active appears at index 0, and put it in the singular "email"/"phone" fields too. Heuristics:
+  * Prefer business / role-based mailboxes (sales@, partnerships@, wholesale@, orders@, procurement@, info@, hello@, contact@) over personal-looking ones.
+  * Prefer Nigerian mobile numbers (+234 7/8/9-prefixed) for direct outreach over landlines.
+  * For social links, prefer profiles published on the freshest page (i.e. when lastUpdatedAt is recent, the social link found on that page is more likely to be live).
+- scoreReason: one short sentence grounded in the candidate's actual data; mention the recency signal when "lastUpdatedAt" is provided (e.g. "site refreshed 2025-11").
 - suggestedPitch: one sentence pitching FBF plantain chips, tailored to the retailer.
-- recommendedNextStep: one concrete next action (call/WhatsApp/visit + who to ask for).
+- recommendedNextStep: one concrete next action that names the most-active channel first (e.g. "WhatsApp +234… (mobile, listed on /contact updated 2025-11)").
 
 Return ONLY a JSON object - no prose, no code fences. Schema:
 {
@@ -120,9 +134,12 @@ Return ONLY a JSON object - no prose, no code fences. Schema:
       "address": string,
       "phone": string|null,
       "email": string|null,
+      "phones": string[],
+      "emails": string[],
       "website": string|null,
       "socialLinks": string[],
       "mapsUrl": string|null,
+      "lastUpdatedAt": string|null,
       "leadScore": number,
       "scoreReason": string,
       "suggestedPitch": string,
@@ -265,38 +282,171 @@ async function getPlaceDetails(placeId: string, apiKey: string): Promise<GoogleP
 
 const JUNK_EMAIL_PREFIX = /^(no[- ]?reply|do[- ]?not[- ]?reply|noreply|donotreply|postmaster|mailer-daemon|abuse|webmaster)@/i;
 
-async function enrichFromWebsite(website: string | null): Promise<{ email: string | null; socialLinks: string[] }> {
-  if (!website) return { email: null, socialLinks: [] };
-  const normalized = normalizeUrl(website);
-  if (!normalized) return { email: null, socialLinks: [] };
+// Role-based mailboxes are far more likely to be monitored by procurement /
+// partnerships staff than a personal-looking address scraped from a footer.
+const ROLE_MAILBOX_PRIORITY = [
+  "sales",
+  "partnerships",
+  "partners",
+  "wholesale",
+  "orders",
+  "procurement",
+  "buyer",
+  "buying",
+  "business",
+  "biz",
+  "info",
+  "hello",
+  "contact",
+  "enquiries",
+  "enquiry",
+  "office",
+  "admin",
+];
 
+const SOCIAL_PATTERNS = [
+  /https?:\/\/(?:www\.)?instagram\.com\/[A-Za-z0-9._-]+/gi,
+  /https?:\/\/(?:www\.)?facebook\.com\/[A-Za-z0-9._\/-]+/gi,
+  /https?:\/\/(?:www\.)?x\.com\/[A-Za-z0-9_]+/gi,
+  /https?:\/\/(?:www\.)?twitter\.com\/[A-Za-z0-9_]+/gi,
+  /https?:\/\/(?:www\.)?linkedin\.com\/[A-Za-z0-9_\/-]+/gi,
+  /https?:\/\/(?:www\.)?tiktok\.com\/@[A-Za-z0-9._-]+/gi,
+  /https?:\/\/(?:wa\.me|api\.whatsapp\.com)\/[A-Za-z0-9?=&+_-]+/gi,
+];
+
+// Capture Nigerian numbers in either international (+234…) or local (070…/080…/090…)
+// form, with optional separators between groups. Normalised after extraction.
+const PHONE_REGEX =
+  /(?:\+?234[\s.()-]?[789]\d[\s.()-]?\d{3}[\s.()-]?\d{4})|(?:0[789]\d[\s.()-]?\d{3}[\s.()-]?\d{4})/g;
+
+interface PageScrape {
+  emails: string[];
+  phones: string[];
+  socials: string[];
+  updatedAt: string | null;
+}
+
+const EMPTY_SCRAPE: PageScrape = { emails: [], phones: [], socials: [], updatedAt: null };
+
+function emailRank(email: string): number {
+  const local = email.split("@")[0]?.toLowerCase() ?? "";
+  const idx = ROLE_MAILBOX_PRIORITY.findIndex((role) => local === role || local.startsWith(`${role}.`) || local.startsWith(`${role}-`));
+  if (idx !== -1) return idx;
+  return ROLE_MAILBOX_PRIORITY.length + (/^[a-z]+\.[a-z]+@/i.test(email) ? 5 : 1);
+}
+
+function rankEmails(emails: string[]): string[] {
+  return unique(
+    emails
+      .map((e) => e.toLowerCase())
+      .filter((e) => !JUNK_EMAIL_PREFIX.test(e))
+  ).sort((a, b) => emailRank(a) - emailRank(b));
+}
+
+function normalizePhone(raw: string): string {
+  const digits = raw.replace(/[^\d+]/g, "");
+  if (digits.startsWith("+234")) return digits;
+  if (digits.startsWith("234")) return `+${digits}`;
+  if (digits.startsWith("0") && digits.length === 11) return `+234${digits.slice(1)}`;
+  return digits;
+}
+
+function rankPhones(phones: string[]): string[] {
+  // Mobile prefixes (070/080/081/090/091 → +2347/+2348/+2349) come first;
+  // international form is preferred since it's WhatsApp-friendly.
+  const normalised = unique(phones.map(normalizePhone));
+  return normalised.sort((a, b) => {
+    const aIntl = a.startsWith("+234") ? 0 : 1;
+    const bIntl = b.startsWith("+234") ? 0 : 1;
+    if (aIntl !== bIntl) return aIntl - bIntl;
+    return 0;
+  });
+}
+
+function parseUpdatedAt(headers: Headers, html: string): string | null {
+  const candidates: (string | null | undefined)[] = [
+    html.match(/<meta[^>]+property=["']og:updated_time["'][^>]+content=["']([^"']+)["']/i)?.[1],
+    html.match(/<meta[^>]+property=["']article:modified_time["'][^>]+content=["']([^"']+)["']/i)?.[1],
+    html.match(/<meta[^>]+name=["']last-modified["'][^>]+content=["']([^"']+)["']/i)?.[1],
+    html.match(/<time[^>]+datetime=["']([^"']+)["']/i)?.[1],
+    headers.get("last-modified"),
+  ];
+
+  let best: number | null = null;
+  for (const c of candidates) {
+    if (!c) continue;
+    const t = Date.parse(c);
+    if (!Number.isFinite(t)) continue;
+    if (best === null || t > best) best = t;
+  }
+  return best === null ? null : new Date(best).toISOString();
+}
+
+async function scrapePage(url: string, timeoutMs: number): Promise<PageScrape> {
   try {
-    const res = await fetchWithTimeout(normalized, 8000);
-    if (!res.ok) return { email: null, socialLinks: [] };
+    const res = await fetchWithTimeout(url, timeoutMs);
+    if (!res.ok) return EMPTY_SCRAPE;
     // Cap body size so a giant page doesn't blow memory or block the request.
     const html = (await res.text()).slice(0, 200_000);
 
-    const emailCandidates = html.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? [];
-    const email = emailCandidates.find((e) => !JUNK_EMAIL_PREFIX.test(e)) ?? null;
+    const emails = html.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? [];
+    const phones = html.match(PHONE_REGEX) ?? [];
+    const socials = SOCIAL_PATTERNS.flatMap((p) => html.match(p) ?? []);
+    const updatedAt = parseUpdatedAt(res.headers, html);
 
-    const socialPatterns = [
-      /https?:\/\/(?:www\.)?instagram\.com\/[A-Za-z0-9._-]+/gi,
-      /https?:\/\/(?:www\.)?facebook\.com\/[A-Za-z0-9._\/-]+/gi,
-      /https?:\/\/(?:www\.)?x\.com\/[A-Za-z0-9_]+/gi,
-      /https?:\/\/(?:www\.)?twitter\.com\/[A-Za-z0-9_]+/gi,
-      /https?:\/\/(?:www\.)?linkedin\.com\/[A-Za-z0-9_\/-]+/gi,
-      /https?:\/\/(?:www\.)?tiktok\.com\/@[A-Za-z0-9._-]+/gi,
-      /https?:\/\/(?:wa\.me|api\.whatsapp\.com)\/[A-Za-z0-9?=&+_-]+/gi,
-    ];
-
-    const socials = unique(
-      socialPatterns.flatMap((pattern) => html.match(pattern) ?? []).slice(0, 8)
-    );
-
-    return { email, socialLinks: socials };
+    return { emails, phones, socials, updatedAt };
   } catch {
-    return { email: null, socialLinks: [] };
+    return EMPTY_SCRAPE;
   }
+}
+
+interface WebsiteSignals {
+  emails: string[];
+  phones: string[];
+  socialLinks: string[];
+  lastUpdatedAt: string | null;
+}
+
+async function enrichFromWebsite(website: string | null): Promise<WebsiteSignals> {
+  if (!website) return { emails: [], phones: [], socialLinks: [], lastUpdatedAt: null };
+  const normalized = normalizeUrl(website);
+  if (!normalized) return { emails: [], phones: [], socialLinks: [], lastUpdatedAt: null };
+
+  // The homepage rarely lists current contact details — /contact and /about
+  // are far more likely to surface the channels staff are actually monitoring.
+  const homepage = normalized;
+  const subPaths = ["/contact", "/contact-us", "/about", "/about-us"];
+  const subUrls = subPaths
+    .map((p) => {
+      try {
+        return new URL(p, normalized).toString();
+      } catch {
+        return null;
+      }
+    })
+    .filter((u): u is string => Boolean(u));
+
+  const [home, ...subs] = await Promise.all([
+    scrapePage(homepage, 8000),
+    // Subpage requests use a tighter timeout — they're best-effort enrichment,
+    // not the critical path.
+    ...subUrls.slice(0, 3).map((u) => scrapePage(u, 5000)),
+  ]);
+
+  const allPages = [home, ...subs];
+
+  const emails = rankEmails(allPages.flatMap((p) => p.emails));
+  const phones = rankPhones(allPages.flatMap((p) => p.phones));
+  const socialLinks = unique(allPages.flatMap((p) => p.socials)).slice(0, 8);
+
+  // Most recent freshness signal across the pages we visited.
+  const lastUpdatedAt = allPages
+    .map((p) => p.updatedAt)
+    .filter((v): v is string => Boolean(v))
+    .sort()
+    .pop() ?? null;
+
+  return { emails, phones, socialLinks, lastUpdatedAt };
 }
 
 async function buildRealCandidates(input: SearchInput, googleApiKey: string): Promise<CandidateLead[]> {
@@ -315,16 +465,27 @@ async function buildRealCandidates(input: SearchInput, googleApiKey: string): Pr
       .map(async (details) => {
         const website = details.website ?? null;
         const websiteSignals = await enrichFromWebsite(website);
+        const placesPhone = details.international_phone_number ?? details.formatted_phone_number ?? null;
+        // Combine the Google Places number with anything we scraped from the
+        // site. Places' number goes in first because Google verifies it, then
+        // we let rankPhones reorder by mobile-vs-landline preference.
+        const phones = rankPhones([
+          ...(placesPhone ? [placesPhone] : []),
+          ...websiteSignals.phones,
+        ]);
         const candidate: CandidateLead = {
           businessName: details.name,
           category: mapGoogleTypesToCategory(details.types ?? []),
           area: input.area,
           address: details.formatted_address ?? `${input.area}, Abuja, Nigeria`,
-          phone: details.international_phone_number ?? details.formatted_phone_number ?? null,
-          email: websiteSignals.email,
+          phone: phones[0] ?? null,
+          email: websiteSignals.emails[0] ?? null,
+          phones,
+          emails: websiteSignals.emails,
           website,
           socialLinks: websiteSignals.socialLinks,
           mapsUrl: details.url ?? null,
+          lastUpdatedAt: websiteSignals.lastUpdatedAt,
         };
         return candidate;
       })
@@ -343,18 +504,46 @@ async function buildRealCandidates(input: SearchInput, googleApiKey: string): Pr
 }
 
 function fallbackScoreAndPitch(input: SearchInput, candidates: CandidateLead[]) {
+  const now = Date.now();
   return {
     results: candidates
       .map((c) => {
-        const contactBonus = (c.phone ? 12 : 0) + (c.email ? 8 : 0) + (c.socialLinks.length > 0 ? 6 : 0);
-        const base = 55 + contactBonus;
+        const contactBonus =
+          (c.phones.length > 0 ? 12 : 0) +
+          (c.emails.length > 0 ? 8 : 0) +
+          (c.socialLinks.length > 0 ? 6 : 0) +
+          // A small boost when we have multiple channels — more ways to reach
+          // the retailer raises the chance of getting through.
+          Math.min(6, (c.phones.length + c.emails.length + c.socialLinks.length) - 1);
+        // Freshness bonus: site updated within the last year is worth a few
+        // points; older than two years gets nothing.
+        let freshnessBonus = 0;
+        if (c.lastUpdatedAt) {
+          const ageDays = (now - Date.parse(c.lastUpdatedAt)) / 86_400_000;
+          if (Number.isFinite(ageDays)) {
+            if (ageDays <= 90) freshnessBonus = 8;
+            else if (ageDays <= 365) freshnessBonus = 5;
+            else if (ageDays <= 730) freshnessBonus = 2;
+          }
+        }
+        const base = 55 + contactBonus + freshnessBonus;
         const leadScore = Math.min(95, Math.max(input.minimumLeadScore, base));
+        const recencyNote = c.lastUpdatedAt
+          ? ` Site last refreshed ${c.lastUpdatedAt.slice(0, 10)}.`
+          : "";
+        const topChannel = c.phones[0]
+          ? `WhatsApp ${c.phones[0]}`
+          : c.emails[0]
+            ? `email ${c.emails[0]}`
+            : c.socialLinks[0]
+              ? `DM ${c.socialLinks[0]}`
+              : "visit in-store";
         return {
           ...c,
           leadScore,
-          scoreReason: `Real Google business in ${input.area}. Contact fields were extracted from Google Places and website signals.`,
+          scoreReason: `Real Google business in ${input.area}. Contact fields extracted from Google Places + website crawl.${recencyNote}`,
           suggestedPitch: "Introduce Fine Boy Foods premium plantain chips and propose a trial listing with samples.",
-          recommendedNextStep: "Call or WhatsApp procurement/manager contact and schedule a short in-store pitch.",
+          recommendedNextStep: `${topChannel} — ask for the procurement/store manager and schedule a short in-store pitch.`,
           source: "Google Places + Website Signals",
         };
       })

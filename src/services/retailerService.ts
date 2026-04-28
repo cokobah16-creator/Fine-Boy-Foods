@@ -191,6 +191,7 @@ export async function saveAgentResults(
       emails: result.emails,
       website: result.website,
       socialLinks: result.socialLinks,
+      activeChannels: [],
       mapsUrl: result.mapsUrl,
       lastUpdatedAt: result.lastUpdatedAt ?? null,
       leadScore: result.leadScore,
@@ -436,6 +437,7 @@ function mapSupabaseRetailer(row: any): Retailer {
     emails: row.emails ?? [],
     website: row.website,
     socialLinks: row.social_links ?? [],
+    activeChannels: row.active_channels ?? [],
     mapsUrl: row.maps_url,
     lastUpdatedAt: row.last_updated_at ?? null,
     leadScore: row.lead_score,
@@ -462,6 +464,7 @@ function toSupabaseRetailer(r: Retailer): Record<string, unknown> {
     emails: r.emails ?? [],
     website: r.website,
     social_links: r.socialLinks,
+    active_channels: r.activeChannels,
     maps_url: r.mapsUrl,
     last_updated_at: r.lastUpdatedAt ?? null,
     lead_score: r.leadScore,
@@ -489,6 +492,7 @@ function toSupabaseRetailerPartial(
   if (r.emails !== undefined) out.emails = r.emails;
   if (r.website !== undefined) out.website = r.website;
   if (r.socialLinks !== undefined) out.social_links = r.socialLinks;
+  if (r.activeChannels !== undefined) out.active_channels = r.activeChannels;
   if (r.mapsUrl !== undefined) out.maps_url = r.mapsUrl;
   if (r.lastUpdatedAt !== undefined) out.last_updated_at = r.lastUpdatedAt;
   if (r.leadScore !== undefined) out.lead_score = r.leadScore;

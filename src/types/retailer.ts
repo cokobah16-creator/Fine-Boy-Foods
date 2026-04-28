@@ -38,6 +38,7 @@ export interface Retailer {
   emails?: string[];
   website?: string | null;
   socialLinks: string[];
+  activeChannels: string[];
   mapsUrl?: string | null;
   // Most recent freshness signal observed on the retailer's website. ISO
   // timestamp or null/undefined if unknown.

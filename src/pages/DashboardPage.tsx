@@ -151,6 +151,23 @@ export function DashboardPage() {
     }
   })();
 
+  const firstLeadChecklistItem = (() => {
+    // Reuse the row count from the Supabase probe — when there's at least
+    // one real retailer in the database, the onboarding step is complete.
+    if (supabaseStatus.state === "connected" && supabaseStatus.rowCount > 0) {
+      return {
+        done: true,
+        label: "First real retailer lead added",
+        detail: `${supabaseStatus.rowCount} retailer${supabaseStatus.rowCount === 1 ? "" : "s"} in your pipeline.`,
+      };
+    }
+    return {
+      done: false,
+      label: "Add your first real Abuja retailer lead",
+      detail: "Visit Add retailer to add manually, or use Find Retailers.",
+    };
+  })();
+
   const edgeFunctionChecklistItem = (() => {
     switch (edgeFunctionStatus.state) {
       case "deployed":
@@ -266,11 +283,7 @@ export function DashboardPage() {
           {[
             supabaseChecklistItem,
             edgeFunctionChecklistItem,
-            {
-              done: false,
-              label: "Add your first real Abuja retailer lead",
-              detail: "Visit Add retailer to add manually.",
-            },
+            firstLeadChecklistItem,
           ].map((item, i) => (
             <li key={i} className="flex items-start gap-3">
               <CheckCircleIcon

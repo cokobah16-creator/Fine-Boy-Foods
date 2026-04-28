@@ -187,10 +187,13 @@ export async function saveAgentResults(
       address: result.address,
       phone: result.phone,
       email: result.email,
+      phones: result.phones,
+      emails: result.emails,
       website: result.website,
       socialLinks: result.socialLinks,
       activeChannels: [],
       mapsUrl: result.mapsUrl,
+      lastUpdatedAt: result.lastUpdatedAt ?? null,
       leadScore: result.leadScore,
       scoreReason: result.scoreReason,
       suggestedPitch: result.suggestedPitch,
@@ -430,10 +433,13 @@ function mapSupabaseRetailer(row: any): Retailer {
     address: row.address,
     phone: row.phone,
     email: row.email,
+    phones: row.phones ?? [],
+    emails: row.emails ?? [],
     website: row.website,
     socialLinks: row.social_links ?? [],
     activeChannels: row.active_channels ?? [],
     mapsUrl: row.maps_url,
+    lastUpdatedAt: row.last_updated_at ?? null,
     leadScore: row.lead_score,
     scoreReason: row.score_reason,
     suggestedPitch: row.suggested_pitch,
@@ -454,10 +460,13 @@ function toSupabaseRetailer(r: Retailer): Record<string, unknown> {
     address: r.address,
     phone: r.phone,
     email: r.email,
+    phones: r.phones ?? [],
+    emails: r.emails ?? [],
     website: r.website,
     social_links: r.socialLinks,
     active_channels: r.activeChannels,
     maps_url: r.mapsUrl,
+    last_updated_at: r.lastUpdatedAt ?? null,
     lead_score: r.leadScore,
     score_reason: r.scoreReason,
     suggested_pitch: r.suggestedPitch,
@@ -479,10 +488,13 @@ function toSupabaseRetailerPartial(
   if (r.address !== undefined) out.address = r.address;
   if (r.phone !== undefined) out.phone = r.phone;
   if (r.email !== undefined) out.email = r.email;
+  if (r.phones !== undefined) out.phones = r.phones;
+  if (r.emails !== undefined) out.emails = r.emails;
   if (r.website !== undefined) out.website = r.website;
   if (r.socialLinks !== undefined) out.social_links = r.socialLinks;
   if (r.activeChannels !== undefined) out.active_channels = r.activeChannels;
   if (r.mapsUrl !== undefined) out.maps_url = r.mapsUrl;
+  if (r.lastUpdatedAt !== undefined) out.last_updated_at = r.lastUpdatedAt;
   if (r.leadScore !== undefined) out.lead_score = r.leadScore;
   if (r.scoreReason !== undefined) out.score_reason = r.scoreReason;
   if (r.suggestedPitch !== undefined) out.suggested_pitch = r.suggestedPitch;

@@ -7,12 +7,34 @@ import {
   XMarkIcon,
   BuildingStorefrontIcon,
   ExclamationTriangleIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  GlobeAltIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import type { RetailerAgentResult, RetailerCategory } from "@/types/retailer";
 import { ABUJA_AREAS, RETAILER_CATEGORY_LABELS } from "@/types/retailer";
 import { findRetailersWithAI, saveAgentResults } from "@/services/retailerService";
 import { ScoreBadge, ScoreBar } from "@/components/retailers/ScoreBadge";
 import { supabaseConfigured } from "@/lib/supabase";
+
+function formatRelativeUpdated(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return null;
+  const days = Math.floor((Date.now() - t) / 86_400_000);
+  if (days < 0) return "updated just now";
+  if (days === 0) return "updated today";
+  if (days === 1) return "updated yesterday";
+  if (days < 30) return `updated ${days}d ago`;
+  if (days < 365) return `updated ${Math.floor(days / 30)}mo ago`;
+  return `updated ${Math.floor(days / 365)}y ago`;
+}
+
+function whatsappHref(phone: string): string {
+  const digits = phone.replace(/[^\d]/g, "");
+  return `https://wa.me/${digits}`;
+}
 
 const CATEGORY_OPTIONS: { value: RetailerCategory | "any"; label: string }[] = [
   { value: "any", label: "Any category" },
@@ -359,6 +381,86 @@ export function RetailerFinderPage() {
                     <div className="mt-2.5">
                       <ScoreBar score={r.leadScore} />
                     </div>
+
+                    {(() => {
+                      const phones = r.phones ?? (r.phone ? [r.phone] : []);
+                      const emails = r.emails ?? (r.email ? [r.email] : []);
+                      const socials = r.socialLinks ?? [];
+                      const updatedLabel = formatRelativeUpdated(r.lastUpdatedAt);
+                      if (phones.length === 0 && emails.length === 0 && socials.length === 0 && !updatedLabel) {
+                        return null;
+                      }
+                      return (
+                        <div
+                          className="mt-3 bg-cream-50 rounded-md p-2.5 ring-1 ring-charcoal-100/60"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <p className="eyebrow">Active channels</p>
+                            {updatedLabel && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-charcoal-500">
+                                <ClockIcon className="h-3 w-3" strokeWidth={2} />
+                                {updatedLabel}
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-1.5">
+                            {phones[0] && (
+                              <div className="flex items-center gap-1.5 text-xs text-charcoal-700">
+                                <PhoneIcon className="h-3.5 w-3.5 text-green-700" strokeWidth={2} />
+                                <a
+                                  href={whatsappHref(phones[0])}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="font-semibold text-green-700 hover:underline"
+                                >
+                                  {phones[0]}
+                                </a>
+                                {phones.length > 1 && (
+                                  <span className="text-[11px] text-charcoal-400">
+                                    +{phones.length - 1} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {emails[0] && (
+                              <div className="flex items-center gap-1.5 text-xs text-charcoal-700">
+                                <EnvelopeIcon className="h-3.5 w-3.5 text-green-700" strokeWidth={2} />
+                                <a
+                                  href={`mailto:${emails[0]}`}
+                                  className="font-semibold text-green-700 hover:underline truncate"
+                                >
+                                  {emails[0]}
+                                </a>
+                                {emails.length > 1 && (
+                                  <span className="text-[11px] text-charcoal-400">
+                                    +{emails.length - 1} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {socials[0] && (
+                              <div className="flex items-center gap-1.5 text-xs text-charcoal-700">
+                                <GlobeAltIcon className="h-3.5 w-3.5 text-green-700" strokeWidth={2} />
+                                <a
+                                  href={socials[0]}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="font-semibold text-green-700 hover:underline truncate"
+                                >
+                                  {socials[0]}
+                                </a>
+                                {socials.length > 1 && (
+                                  <span className="text-[11px] text-charcoal-400">
+                                    +{socials.length - 1} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div className="bg-cream-100 rounded-md p-2.5 ring-1 ring-charcoal-100/60">

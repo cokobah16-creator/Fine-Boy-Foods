@@ -32,10 +32,17 @@ export interface Retailer {
   address?: string | null;
   phone?: string | null;
   email?: string | null;
+  // Ranked, deduped contact arrays. Index 0 mirrors phone/email and represents
+  // the channel most likely to be currently active.
+  phones?: string[];
+  emails?: string[];
   website?: string | null;
   socialLinks: string[];
   activeChannels: string[];
   mapsUrl?: string | null;
+  // Most recent freshness signal observed on the retailer's website. ISO
+  // timestamp or null/undefined if unknown.
+  lastUpdatedAt?: string | null;
   leadScore: number;
   scoreReason?: string | null;
   suggestedPitch?: string | null;
@@ -98,9 +105,16 @@ export interface RetailerAgentResult {
   address: string;
   phone: string | null;
   email: string | null;
+  // Ranked, deduped contact lists. Index 0 mirrors `phone`/`email` and
+  // represents the channel most likely to be currently active.
+  phones?: string[];
+  emails?: string[];
   website: string | null;
   socialLinks: string[];
   mapsUrl: string | null;
+  // Most recent freshness signal observed on the retailer's website
+  // (Last-Modified, og:updated_time, etc.). ISO timestamp or null.
+  lastUpdatedAt?: string | null;
   leadScore: number;
   scoreReason: string;
   suggestedPitch: string;

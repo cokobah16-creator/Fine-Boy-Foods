@@ -1,6 +1,5 @@
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 import { db } from "@/lib/db";
-import { seedRetailers } from "@/data/seedRetailers";
 import type {
   Retailer,
   RetailerContact,
@@ -16,7 +15,7 @@ function uuid(): string {
 
 // ─── In-Memory Store (used when Supabase is not configured) ───────────────────
 
-let memoryStore: Retailer[] = [...seedRetailers];
+let memoryStore: Retailer[] = [];
 
 // ─── Retailer CRUD ────────────────────────────────────────────────────────────
 

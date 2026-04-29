@@ -8,27 +8,6 @@ function uuid(): string {
 
 // ── Drivers ─────────────────────────────────────────────────────────────────
 
-const SEED_DRIVERS = [
-  { name: "Musa Ibrahim", phone: "+234 803 555 0142", vehicle: "Hilux DAA-321XA" },
-  { name: "Chidi Okafor", phone: "+234 805 555 0179", vehicle: "Sienna ABJ-902XS" },
-];
-
-export async function ensureDriversSeeded(): Promise<void> {
-  const count = await db.drivers.count();
-  if (count > 0) return;
-  const now = new Date().toISOString();
-  await db.drivers.bulkAdd(
-    SEED_DRIVERS.map((d) => ({
-      id: uuid(),
-      name: d.name,
-      phone: d.phone,
-      vehicle: d.vehicle,
-      active: true,
-      createdAt: now,
-    }))
-  );
-}
-
 export async function listDrivers(): Promise<Driver[]> {
   return db.drivers.orderBy("name").toArray();
 }

@@ -150,10 +150,7 @@ export function LoginPage() {
         </button>
 
         <p className="text-[11px] text-charcoal-400 mt-4 text-center leading-relaxed">
-          Default PINs (change in Settings):{" "}
-          <strong className="text-charcoal-500">Admin</strong> 1234 ·{" "}
-          <strong className="text-charcoal-500">Production</strong> 2345 ·{" "}
-          <strong className="text-charcoal-500">Delivery</strong> 3456
+          Forgot your PIN? Ask the workspace owner.
         </p>
       </div>
     </div>

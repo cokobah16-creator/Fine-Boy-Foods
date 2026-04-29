@@ -7,13 +7,11 @@ import {
   type ReactNode,
 } from "react";
 import {
-  ensureDefaultAdmin,
+  ensureProtectedOwner,
   loadSession,
   signIn as svcSignIn,
   signOut as svcSignOut,
 } from "@/services/authService";
-import { ensureProductsSeeded } from "@/services/productService";
-import { ensureDriversSeeded } from "@/services/distributionService";
 import { recomputeAlerts } from "@/services/alertsService";
 import type { AuthSession, UserRole } from "@/types/operations";
 
@@ -34,9 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     (async () => {
-      await ensureDefaultAdmin();
-      await ensureProductsSeeded();
-      await ensureDriversSeeded();
+      await ensureProtectedOwner();
       await recomputeAlerts();
       if (!active) return;
       setSession(loadSession());

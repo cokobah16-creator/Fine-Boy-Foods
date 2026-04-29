@@ -212,6 +212,9 @@ export interface AppUser {
   role: UserRole;
   // SHA-256 hash of the PIN; never stored as plaintext.
   pinHash: string;
+  // Irrevocable accounts: cannot be deleted, cannot be demoted, cannot have
+  // their PIN changed by another user (the owner can still rotate their own).
+  isProtected?: boolean;
   createdAt: string;
 }
 

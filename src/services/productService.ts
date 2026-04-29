@@ -1,61 +1,8 @@
 import { db } from "@/lib/db";
-import type { Product, ProductFlavour } from "@/types/operations";
+import type { Product } from "@/types/operations";
 
 function uuid(): string {
   return crypto.randomUUID();
-}
-
-const SEED_PRODUCTS: Omit<Product, "id" | "createdAt" | "updatedAt">[] = [
-  {
-    name: "Sweet Original",
-    sku: "FBF-SO-150G",
-    unitPrice: 800,
-    lowStockThreshold: 50,
-    colorKey: "sweet",
-  },
-  {
-    name: "Spicy Suya",
-    sku: "FBF-SS-150G",
-    unitPrice: 850,
-    lowStockThreshold: 50,
-    colorKey: "spicy",
-  },
-];
-
-const SEED_RAW_MATERIALS = [
-  { name: "Plantains (unripe)", unit: "kg" as const, quantity: 200, lowStockThreshold: 50, costPerUnit: 600 },
-  { name: "Vegetable Oil", unit: "litre" as const, quantity: 80, lowStockThreshold: 20, costPerUnit: 1800 },
-  { name: "Salt", unit: "kg" as const, quantity: 25, lowStockThreshold: 5, costPerUnit: 400 },
-  { name: "Suya Spice", unit: "kg" as const, quantity: 12, lowStockThreshold: 3, costPerUnit: 4500 },
-  { name: "Packaging (150g pouch)", unit: "pack" as const, quantity: 1500, lowStockThreshold: 200, costPerUnit: 35 },
-];
-
-export async function ensureProductsSeeded(): Promise<void> {
-  const count = await db.products.count();
-  if (count === 0) {
-    const now = new Date().toISOString();
-    await db.products.bulkAdd(
-      SEED_PRODUCTS.map((p) => ({
-        ...p,
-        id: uuid(),
-        createdAt: now,
-        updatedAt: now,
-      }))
-    );
-  }
-
-  const rawCount = await db.rawMaterials.count();
-  if (rawCount === 0) {
-    const now = new Date().toISOString();
-    await db.rawMaterials.bulkAdd(
-      SEED_RAW_MATERIALS.map((r) => ({
-        ...r,
-        id: uuid(),
-        createdAt: now,
-        updatedAt: now,
-      }))
-    );
-  }
 }
 
 export async function listProducts(): Promise<Product[]> {
@@ -66,10 +13,37 @@ export async function getProduct(id: string): Promise<Product | undefined> {
   return db.products.get(id);
 }
 
-export async function getProductByFlavour(
-  flavour: ProductFlavour
-): Promise<Product | undefined> {
-  return db.products.where("name").equals(flavour).first();
+export async function createProduct(input: {
+  name: Product["name"];
+  sku: string;
+  unitPrice: number;
+  lowStockThreshold: number;
+  colorKey: Product["colorKey"];
+}): Promise<Product> {
+  const trimmedSku = input.sku.trim();
+  if (!trimmedSku) throw new Error("SKU is required");
+
+  const duplicateSku = await db.products
+    .where("sku")
+    .equalsIgnoreCase(trimmedSku)
+    .first();
+  if (duplicateSku) {
+    throw new Error(`SKU ${trimmedSku} already exists`);
+  }
+
+  const now = new Date().toISOString();
+  const product: Product = {
+    id: uuid(),
+    name: input.name,
+    sku: trimmedSku.toUpperCase(),
+    unitPrice: input.unitPrice,
+    lowStockThreshold: input.lowStockThreshold,
+    colorKey: input.colorKey,
+    createdAt: now,
+    updatedAt: now,
+  };
+  await db.products.add(product);
+  return product;
 }
 
 export async function updateProduct(
@@ -80,4 +54,28 @@ export async function updateProduct(
     ...patch,
     updatedAt: new Date().toISOString(),
   });
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  // Refuse to delete a product that has any inventory or production history,
+  // since orders and reports still reference it by id.
+  const inventory = await db.inventoryBatches
+    .where("productId")
+    .equals(id)
+    .count();
+  if (inventory > 0) {
+    throw new Error(
+      "Can't delete a product that still has inventory batches recorded."
+    );
+  }
+  const productionRuns = await db.productionBatches
+    .where("productId")
+    .equals(id)
+    .count();
+  if (productionRuns > 0) {
+    throw new Error(
+      "Can't delete a product with production history. Archive it instead."
+    );
+  }
+  await db.products.delete(id);
 }

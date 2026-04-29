@@ -5,8 +5,21 @@ import {
   MagnifyingGlassIcon,
   ArrowUpTrayIcon,
   XMarkIcon,
+  CubeIcon,
+  ShoppingCartIcon,
+  TruckIcon,
+  ShieldCheckIcon,
+  CurrencyDollarIcon,
+  ChartBarIcon,
+  BeakerIcon,
+  BellAlertIcon,
+  Cog6ToothIcon,
+  UserCircleIcon,
+  ArrowLeftStartOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import logoUrl from "@/assets/fbf-logo.png";
+import { useAuth } from "@/contexts/AuthContext";
+import { ROLE_LABELS } from "@/types/operations";
 
 interface NavItem {
   label: string;
@@ -15,11 +28,20 @@ interface NavItem {
   exact?: boolean;
 }
 
-const NAV_ITEMS: NavItem[] = [
+const OPERATIONS_NAV: NavItem[] = [
   { label: "Dashboard", to: "/", icon: HomeIcon, exact: true },
+  { label: "Inventory", to: "/inventory", icon: CubeIcon },
+  { label: "Orders", to: "/orders", icon: ShoppingCartIcon },
+  { label: "Customers", to: "/customers", icon: BuildingStorefrontIcon },
+  { label: "Production", to: "/production", icon: BeakerIcon },
+  { label: "Quality Control", to: "/quality", icon: ShieldCheckIcon },
+  { label: "Distribution", to: "/distribution", icon: TruckIcon },
+  { label: "Finance", to: "/finance", icon: CurrencyDollarIcon },
+  { label: "Analytics", to: "/analytics", icon: ChartBarIcon },
+  { label: "Alerts", to: "/alerts", icon: BellAlertIcon },
 ];
 
-const RETAILER_NAV: NavItem[] = [
+const CRM_NAV: NavItem[] = [
   { label: "All retailers", to: "/retailers", icon: BuildingStorefrontIcon, exact: true },
   { label: "Find new leads", to: "/retailers/find", icon: MagnifyingGlassIcon },
   { label: "Add retailer", to: "/retailers/import", icon: ArrowUpTrayIcon },
@@ -30,11 +52,12 @@ interface Props {
   onClose: () => void;
 }
 
-function NavLinkItem({ item }: { item: NavItem }) {
+function NavLinkItem({ item, onClick }: { item: NavItem; onClick?: () => void }) {
   return (
     <NavLink
       to={item.to}
       end={item.exact}
+      onClick={onClick}
       className={({ isActive }) =>
         `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 ease-standard ${
           isActive
@@ -50,6 +73,7 @@ function NavLinkItem({ item }: { item: NavItem }) {
 }
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
+  const { session, signOut } = useAuth();
   return (
     <div className="flex flex-col h-full">
       {/* Brand */}
@@ -62,7 +86,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           />
           <div>
             <p className="text-sm font-bold text-charcoal-700 leading-tight">Fine Boy Foods</p>
-            <p className="text-[11px] text-charcoal-400 mt-0.5">Retailer Finder</p>
+            <p className="text-[11px] text-charcoal-400 mt-0.5">Retail OS</p>
           </div>
         </div>
         {onClose && (
@@ -78,25 +102,52 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map((item) => (
-          <NavLinkItem key={item.to} item={item} />
+        <p className="px-3 eyebrow mb-2">Operations</p>
+        {OPERATIONS_NAV.map((item) => (
+          <NavLinkItem key={item.to} item={item} onClick={onClose} />
         ))}
 
         <div className="pt-5 pb-2">
-          <p className="px-3 eyebrow">Pipeline</p>
+          <p className="px-3 eyebrow">Retailer CRM</p>
         </div>
-
-        {RETAILER_NAV.map((item) => (
-          <NavLinkItem key={item.to} item={item} />
+        {CRM_NAV.map((item) => (
+          <NavLinkItem key={item.to} item={item} onClick={onClose} />
         ))}
+
+        <div className="pt-5 pb-2">
+          <p className="px-3 eyebrow">Account</p>
+        </div>
+        <NavLinkItem
+          item={{ label: "Settings", to: "/settings", icon: Cog6ToothIcon }}
+          onClick={onClose}
+        />
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-charcoal-100">
-        <p className="text-[11px] text-charcoal-400 text-center">
-          Fine Boy Foods Ltd · Abuja
-        </p>
-      </div>
+      {session && (
+        <div className="px-4 py-3 border-t border-charcoal-100">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-green-50 text-green-700 flex items-center justify-center">
+              <UserCircleIcon className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-charcoal-700 truncate">
+                {session.name}
+              </p>
+              <p className="text-[11px] text-charcoal-400">
+                {ROLE_LABELS[session.role]}
+              </p>
+            </div>
+            <button
+              onClick={signOut}
+              className="p-1.5 rounded-md hover:bg-cream-100 text-charcoal-400"
+              title="Sign out"
+            >
+              <ArrowLeftStartOnRectangleIcon className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -117,7 +168,7 @@ export function MobileSidebar({ open, onClose }: Props) {
         className="fixed inset-0 z-40 fbf-scrim lg:hidden"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 left-0 z-50 w-60 bg-white lg:hidden shadow-lg">
+      <div className="fixed inset-y-0 left-0 z-50 w-72 bg-white lg:hidden shadow-lg">
         <SidebarContent onClose={onClose} />
       </div>
     </>

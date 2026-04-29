@@ -2,10 +2,32 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import { Sidebar, MobileSidebar } from "./Navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { LoginPage } from "@/pages/auth/LoginPage";
 import logoUrl from "@/assets/fbf-logo.png";
 
 export function Layout() {
+  const { session, ready } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cream-50">
+        <div className="text-center">
+          <img
+            src={logoUrl}
+            alt="Fine Boy Foods"
+            className="h-12 w-12 rounded-full ring-1 ring-charcoal-100 bg-cream-100 mx-auto mb-3"
+          />
+          <p className="text-sm text-charcoal-500">Starting Fine Boy Foods…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <LoginPage />;
+  }
 
   return (
     <div className="flex min-h-screen bg-cream-50">
@@ -13,7 +35,7 @@ export function Layout() {
       <MobileSidebar open={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile header — 56px tall, cream-tinted with subtle blur */}
+        {/* Mobile header */}
         <header className="lg:hidden flex items-center gap-3 px-4 h-14 bg-cream-50/90 backdrop-blur-md border-b border-charcoal-100 sticky top-0 z-30">
           <button
             onClick={() => setMobileOpen(true)}

@@ -204,6 +204,77 @@ export interface Alert {
   createdAt: string;
 }
 
+export type EmployeeDepartment =
+  | "production"
+  | "quality"
+  | "distribution"
+  | "sales"
+  | "admin"
+  | "other";
+
+export type EmployeeStatus = "active" | "on_leave" | "terminated";
+export type PayFrequency = "weekly" | "biweekly" | "monthly";
+
+export interface Employee {
+  id: string;
+  fullName: string;
+  role: string;
+  department: EmployeeDepartment;
+  phone?: string | null;
+  email?: string | null;
+  // Base salary in NGN per pay period (matches payFrequency)
+  baseSalary: number;
+  payFrequency: PayFrequency;
+  // Optional bank details
+  bankName?: string | null;
+  bankAccount?: string | null;
+  hireDate: string;
+  status: EmployeeStatus;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PayrollRunStatus = "draft" | "approved" | "paid";
+
+export interface PayrollEntry {
+  employeeId: string;
+  employeeName: string;
+  role: string;
+  department: EmployeeDepartment;
+  baseSalary: number;
+  bonuses: number;
+  // Total pre-tax/deduction additions (e.g. allowances, overtime)
+  allowances: number;
+  // Total deductions (loan, advance, lateness, tax)
+  deductions: number;
+  // Snapshot of net pay = base + bonuses + allowances - deductions
+  netPay: number;
+  notes?: string | null;
+}
+
+export interface PayrollRun {
+  id: string;
+  // Human-readable code like FBF-PAY-2026-05
+  runCode: string;
+  // Period start/end ISO dates (yyyy-mm-dd)
+  periodStart: string;
+  periodEnd: string;
+  // Date salaries should be paid on
+  payDate: string;
+  status: PayrollRunStatus;
+  entries: PayrollEntry[];
+  totalGross: number;
+  totalDeductions: number;
+  totalNet: number;
+  notes?: string | null;
+  preparedBy: string;
+  approvedBy?: string | null;
+  paidAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type UserRole = "admin" | "production" | "delivery";
 
 export interface AppUser {
@@ -262,6 +333,33 @@ export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   marketing: "Marketing",
   rent: "Rent",
   other: "Other",
+};
+
+export const EMPLOYEE_DEPARTMENT_LABELS: Record<EmployeeDepartment, string> = {
+  production: "Production",
+  quality: "Quality Control",
+  distribution: "Distribution",
+  sales: "Sales",
+  admin: "Admin",
+  other: "Other",
+};
+
+export const EMPLOYEE_STATUS_LABELS: Record<EmployeeStatus, string> = {
+  active: "Active",
+  on_leave: "On Leave",
+  terminated: "Terminated",
+};
+
+export const PAY_FREQUENCY_LABELS: Record<PayFrequency, string> = {
+  weekly: "Weekly",
+  biweekly: "Bi-weekly",
+  monthly: "Monthly",
+};
+
+export const PAYROLL_STATUS_LABELS: Record<PayrollRunStatus, string> = {
+  draft: "Draft",
+  approved: "Approved",
+  paid: "Paid",
 };
 
 export const ALERT_KIND_LABELS: Record<AlertKind, string> = {

@@ -10,6 +10,7 @@ import {
   TruckIcon,
   ShieldCheckIcon,
   CurrencyDollarIcon,
+  BanknotesIcon,
   ChartBarIcon,
   BeakerIcon,
   BellAlertIcon,
@@ -37,6 +38,7 @@ const OPERATIONS_NAV: NavItem[] = [
   { label: "Quality Control", to: "/quality", icon: ShieldCheckIcon },
   { label: "Distribution", to: "/distribution", icon: TruckIcon },
   { label: "Finance", to: "/finance", icon: CurrencyDollarIcon },
+  { label: "Payroll", to: "/payroll", icon: BanknotesIcon },
   { label: "Analytics", to: "/analytics", icon: ChartBarIcon },
   { label: "Alerts", to: "/alerts", icon: BellAlertIcon },
 ];

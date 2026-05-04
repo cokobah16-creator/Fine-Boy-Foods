@@ -11,6 +11,7 @@ import { ProductionPage } from "@/pages/operations/ProductionPage";
 import { QualityControlPage } from "@/pages/operations/QualityControlPage";
 import { DistributionPage } from "@/pages/operations/DistributionPage";
 import { FinancePage } from "@/pages/operations/FinancePage";
+import { PayrollPage } from "@/pages/operations/PayrollPage";
 import { AnalyticsPage } from "@/pages/operations/AnalyticsPage";
 import { AlertsPage } from "@/pages/operations/AlertsPage";
 import { SettingsPage } from "@/pages/operations/SettingsPage";
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="quality" element={<QualityControlPage />} />
           <Route path="distribution" element={<DistributionPage />} />
           <Route path="finance" element={<FinancePage />} />
+          <Route path="payroll" element={<PayrollPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="settings" element={<SettingsPage />} />

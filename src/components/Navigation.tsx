@@ -21,6 +21,7 @@ import {
 import logoUrl from "@/assets/fbf-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLE_LABELS } from "@/types/operations";
+import { SyncBadge } from "@/components/SyncBadge";
 
 interface NavItem {
   label: string;
@@ -124,6 +125,11 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           onClick={onClose}
         />
       </nav>
+
+      {/* Sync status */}
+      <div className="px-3 pb-2">
+        <SyncBadge />
+      </div>
 
       {/* Footer */}
       {session && (

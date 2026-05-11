@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import { Sidebar, MobileSidebar } from "./Navigation";
+import { SyncBadge } from "./SyncBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import logoUrl from "@/assets/fbf-logo.png";
@@ -51,6 +52,9 @@ export function Layout() {
               className="h-8 w-8 rounded-full ring-1 ring-charcoal-100 bg-cream-100"
             />
             <span className="text-sm font-bold text-charcoal-700">Fine Boy Foods</span>
+          </div>
+          <div className="ml-auto">
+            <SyncBadge compact />
           </div>
         </header>
 
